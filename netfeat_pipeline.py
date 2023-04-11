@@ -6,8 +6,9 @@ This module is design to compute network metrics based on functional connectivit
 """
 
 import numpy as np
+import pandas as pd
 from time import time
-from tools import bcolors
+from tools import bcolors, suppress_stdout
 
 from sklearn.model_selection import (
     StratifiedKFold,
@@ -17,6 +18,7 @@ from sklearn.model_selection import (
 from sklearn.preprocessing import LabelEncoder
 
 from moabb.evaluations.base import BaseEvaluation
+from moabb.evaluations import WithinSessionEvaluation
 import moabb_settings
 moabb_settings.init()
 
@@ -33,6 +35,10 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
         print(bcolors.HEADER + "dataset: {0}".format(type(dataset).__name__) + bcolors.ENDC)
 
         for subject in dataset.subject_list:
+            run_pipes = self.results.not_yet_computed(pipelines, dataset, subject)
+            if len(run_pipes) == 0:
+                continue
+
             print('-' * 100)
             print(bcolors.HEADER + "sub: {0}".format(subject) + bcolors.ENDC)
 
@@ -49,15 +55,15 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                     t_start = time()
                     cv = StratifiedKFold(5, shuffle=False, random_state=None)
 
-                    acc = cross_val_score(clf,
-                                          X_session,
-                                          y_session,
-                                          cv=cv,
-                                          scoring=self.paradigm.scoring,
-                                          n_jobs=self.n_jobs,
-                                          error_score = self.error_score
-                                          )
-
+                    with suppress_stdout():
+                        acc = cross_val_score(clf,
+                                              X_session,
+                                              y_session,
+                                              cv=cv,
+                                              scoring=self.paradigm.scoring,
+                                              n_jobs=self.n_jobs,
+                                              error_score = self.error_score
+                                              )
                     score = acc.mean()
                     score_std = acc.std()
                     duration = time() - t_start

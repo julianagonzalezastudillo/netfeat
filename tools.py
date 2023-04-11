@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+import sys, os
 
 class bcolors:
     HEADER = '\033[95m'
@@ -9,3 +11,14 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+@contextmanager
+def suppress_stdout():
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout

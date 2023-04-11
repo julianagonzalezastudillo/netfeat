@@ -40,7 +40,9 @@ for dt, mtg in zip(datasets, montages):
     cross_val = WithinSessionEvaluation_netfeat(
         datasets = dt,
         paradigm = paradigm,
+        overwrite=True,
+        hdf5_path=None,
     )
     results = cross_val.process(pipeline)
-    # results.to_csv("./results/results_moabb_{0}_coh_rh_lh_csp.csv".format(type(dt).__name__))
+    results.to_csv("./results/classification/{0}_rh_lh_csp.csv".format(type(dt).__name__), index=False)
 
