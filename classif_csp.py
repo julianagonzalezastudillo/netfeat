@@ -44,5 +44,5 @@ for dt, mtg in zip(datasets, montages):
         hdf5_path=None,
     )
     results = cross_val.process(pipeline)
-    results.to_csv("./results/classification/{0}_rh_lh_csp.csv".format(type(dt).__name__), index=False)
+    results.to_csv("./results/classification/{0}_rh_lh_csp.csv".format(dt.code), index=False)
 
