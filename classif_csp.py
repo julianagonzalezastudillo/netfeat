@@ -28,8 +28,8 @@ if jsonfile in os.listdir(path):
         parameterDict = json.load(jsonfile)
 fmin = parameterDict['fmin']
 fmax = parameterDict['fmax']
-csp_n_components = parameterDict['csp_n_components']
-csp_component_order = parameterDict['csp_component_order']
+n_components = parameterDict['csp_n_components']
+component_order = parameterDict['csp_component_order']
 
 # datasets = [BNCI2014001(), Cho2017(), Lee2019_MI(), Schirrmeister2017(), Weibo2014(), Zhou2016()]
 # montages = ['standard_1020', 'standard_1020', 'standard_1005', 'standard_1005', 'standard_1020', 'standard_1020']
@@ -38,7 +38,7 @@ montages = ['standard_1020']
 
 
 pipeline = {"CSP+PS+SVM": make_pipeline(
-    CSP(n_components=csp_n_components, reg=None, transform_into='average_power', component_order=csp_component_order),
+    CSP(n_components=n_components, reg=None, transform_into='average_power', component_order=component_order),
     SVC(kernel = "linear"))}
 paradigm = LeftRightImagery(fmin=fmin, fmax=fmax)  # for rh vs lh
 
