@@ -1,0 +1,6 @@
+{
+    "fmin": 8,
+    "fmax": 35,
+    "csp_component_order": "alternate",
+    "csp_n_components": 8
+}
