@@ -18,9 +18,9 @@ from sklearn.model_selection import (
 from sklearn.preprocessing import LabelEncoder
 
 from moabb.evaluations.base import BaseEvaluation
-from moabb.evaluations import WithinSessionEvaluation
-import moabb_settings
-moabb_settings.init()
+from moabb_settings import add_attributes
+import save_features
+save_features.init()
 
 
 class WithinSessionEvaluation_netfeat(BaseEvaluation):
@@ -34,6 +34,7 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
         print('=' * 100)
         print(bcolors.HEADER + "dataset: {0}".format(type(dataset).__name__) + bcolors.ENDC)
 
+        dataset_res = list()
         for subject in dataset.subject_list:
             run_pipes = self.results.not_yet_computed(pipelines, dataset, subject)
             if len(run_pipes) == 0:
@@ -42,11 +43,11 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
             print('-' * 100)
             print(bcolors.HEADER + "sub: {0}".format(subject) + bcolors.ENDC)
 
-            X, y, metadata = self.paradigm.get_data(dataset=dataset, subjects=[subject], return_epochs=False)
+            X, y, metadata = self.paradigm.get_data(dataset=dataset, subjects=[subject], return_epochs=True)
 
             for session in np.unique(metadata.session):
                 ix = metadata.session == session
-                X_session = X[ix]
+                X_session = np.array(X[ix])
                 le = LabelEncoder()  # to change string labels to numerical ones
                 y_session = le.fit_transform(y[ix])
                 nchan = np.array(X).shape[1]
@@ -54,6 +55,8 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                 for name, clf in pipelines.items():
                     t_start = time()
                     cv = StratifiedKFold(5, shuffle=False, random_state=None)
+                    [add_attributes(clf[clf.steps[i][0]], subject=subject, dataset=dataset, session=session,
+                                    pipeline=name, ch_names=X.ch_names) for i in range(len(clf.steps))]
 
                     with suppress_stdout():
                         acc = cross_val_score(clf,
@@ -68,7 +71,7 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                     score_std = acc.std()
                     duration = time() - t_start
                     res = {
-                        "dataset": dataset,
+                        "dataset": dataset.code,
                         "subject": subject,
                         "session": session,
                         "pipeline": name,
@@ -81,6 +84,6 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                     if "n_cv" in globals():
                         global n_cv
                         n_cv = 1
-                    moabb_settings.n_cv = 1
-
-                    yield res
+                    save_features.n_cv = 1
+                    dataset_res.append(res)
+        return pd.DataFrame(dataset_res)
