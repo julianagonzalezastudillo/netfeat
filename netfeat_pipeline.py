@@ -44,8 +44,9 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
             print(bcolors.HEADER + "sub: {0}".format(subject) + bcolors.ENDC)
 
             X, y, metadata = self.paradigm.get_data(dataset=dataset, subjects=[subject], return_epochs=True)
+            dataset.sessions = np.unique(metadata.session)
 
-            for session in np.unique(metadata.session):
+            for session in dataset.sessions:
                 ix = metadata.session == session
                 X_session = np.array(X[ix])
                 le = LabelEncoder()  # to change string labels to numerical ones
@@ -56,7 +57,7 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                     t_start = time()
                     cv = StratifiedKFold(5, shuffle=False, random_state=None)
                     [add_attributes(clf[clf.steps[i][0]], subject=subject, dataset=dataset, session=session,
-                                    pipeline=name, ch_names=X.ch_names) for i in range(len(clf.steps))]
+                                    pipeline=name, ch_names=X.ch_names, cv_splits=cv.n_splits) for i in range(len(clf.steps))]
 
                     with suppress_stdout():
                         acc = cross_val_score(clf,

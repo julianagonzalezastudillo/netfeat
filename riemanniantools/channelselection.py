@@ -59,7 +59,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, nelec=16, metric='riemann', n_jobs=1,
-                 subject=None, dataset=None, session=None, pipeline=None, ch_names=None):
+                 subject=None, dataset=None, session=None, pipeline=None, ch_names=None, cv_splits=None):
         """Init."""
         self.nelec = nelec
         self.metric = metric
@@ -70,6 +70,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         self.ch_names = ch_names
         # self.montage_name = montage_name
         self.pipeline = pipeline
+        self.cv_splits = cv_splits
         self.t_val = None
 
     def fit(self, X, y=None, sample_weight=None):
