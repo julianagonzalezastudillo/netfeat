@@ -85,8 +85,8 @@ for csp_f_p in ['filters', 'patterns']:
         # plot csp values
         # fixed max size
         ch_size_norm_to_plot = ch_size/max(abs(ch_size))
-        im = plt.scatter(ch_pos[:, 0], ch_pos[:, 1], s=(abs(ch_size_norm_to_plot)*fig.dpi/6)**2, c=ch_size, marker=".", cmap=cmap,
-                         alpha=0.9, linewidths=0, edgecolors='k')
+        im = plt.scatter(ch_pos[:, 0], ch_pos[:, 1], s=(abs(ch_size_norm_to_plot)*fig.dpi/6)**2, c=ch_size, marker=".",
+                         cmap=cmap, alpha=0.9, linewidths=0, edgecolors='k')
 
         # add channel names
         for i, ch in zip(np.arange(len(ch_name)), ch_name):
@@ -107,7 +107,7 @@ for csp_f_p in ['filters', 'patterns']:
 
         plt.show()
         fig_name = Path(os.path.join(os.getcwd(), 'results', 'csp_features', 'plot',
-                                     'csp_{0}_mean_across_sub_alpha_beta_coh_{1}.png'.format(csp_f_p, class_name)))
+                                     'csp_{0}_mean_across_sub_alpha_beta_{1}.png'.format(csp_f_p, class_name)))
         fig.savefig(fig_name, transparent=True)
 
         # print 10 highest values channels
