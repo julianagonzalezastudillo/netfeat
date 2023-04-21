@@ -89,4 +89,4 @@ plt.show()
 fig_name = Path(os.path.join(os.getcwd(), 'results', 'riemannian_features', 'plot',
                              'riemannian_occurrences_mean_across_sub_alpha_beta.png'))
 
-fig.savefig( fig_name, transparent = True )
+fig.savefig(fig_name, transparent=True)
