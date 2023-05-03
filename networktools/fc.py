@@ -17,8 +17,7 @@ class functional_connectivity(TransformerMixin, BaseEstimator):
         Xfc = self._functional_connectivity(X)
         return Xfc
 
-    def _functional_connectivity(self, X=None):
-        print("Computing functional connectivity ...")
+    def _functional_connectivity(self, X):
         n_chan = len(X.ch_names)
         delta, ratio = 1, 0.5
         Xfc = np.empty((len(X), n_chan, n_chan))

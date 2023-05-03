@@ -12,6 +12,7 @@ from tools import bcolors, suppress_stdout
 import os
 import pickle
 import gzip
+from copy import deepcopy
 
 from sklearn.model_selection import (
     StratifiedKFold,
@@ -23,7 +24,6 @@ from sklearn.base import clone
 
 from moabb.evaluations.base import BaseEvaluation
 from moabb_settings import add_attributes
-import networktools.fc as fc
 import save_features
 save_features.init()
 
@@ -51,13 +51,13 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
             X, y, metadata = self.paradigm.get_data(dataset=dataset, subjects=[subject], return_epochs=True)
             dataset.sessions = np.unique(metadata.session)
 
-            for name, clf in pipelines.items():
+            for name, clf_preproc in pipelines.items():
                 t_start = time()
                 cv = StratifiedKFold(5, shuffle=False, random_state=None)
-                [add_attributes(clf[clf.steps[i][0]], subject=subject, dataset=dataset, pipeline=name,
-                                ch_names=X.ch_names, cv_splits=cv.n_splits) for i in range(len(clf.steps))]
+                [add_attributes(clf_preproc[clf_preproc.steps[i][0]], subject=subject, dataset=dataset, pipeline=name,
+                                ch_names=X.ch_names, cv_splits=cv.n_splits) for i in range(len(clf_preproc.steps))]
 
-                X, clf = self.fc_net(X, clf)
+                X, clf = self.fc_net(X, clf_preproc)
 
                 for session in dataset.sessions:
                     ix = metadata.session == session
@@ -97,44 +97,48 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                     dataset_res.append(res)
         return pd.DataFrame(dataset_res)
 
-    def fc_net(self, X, clf):
+    def fc_net(self, X, clf_preproc):
         """
         For optimisation functional connectivity and network metrics are computed and saved outside the
         cross-validation. If the files contained this data already exists, they are loaded.
         :return:
+        X: nd.array
+        clf: pipeline
         """
-
+        clf = deepcopy(clf_preproc)
         content = [clf.steps[i][0] for i in range(len(clf.steps))]
 
-        if 'functional_connectivity' in content:
-            method = clf['functional_connectivity'].method
-            subject = clf.named_steps['functional_connectivity'].subject
-            dataset = clf.named_steps['functional_connectivity'].dataset
+        for estimator in ['functional_connectivity', 'net_metric']:
+            if estimator in content:
+                method = clf[estimator].method
+                subject = clf.named_steps[estimator].subject
+                dataset = clf.named_steps[estimator].dataset
 
-            file_path = os.path.join(os.getcwd(), "results/fc/")
-            if not os.path.exists(file_path):
-                os.makedirs(file_path)
+                file_path = os.path.join(os.getcwd(), "results/{0}/".format(estimator))
+                if not os.path.exists(file_path):
+                    os.makedirs(file_path)
 
-            file_name = "functional_connectivity_{0}_{1}_{2}_{3}.gz"\
-                .format(dataset.code, str(subject).zfill(3), "-".join(list(X.event_id)), method)
-            fc_file = os.path.join(file_path, file_name)
-            if os.path.exists(fc_file):
-                print("Loading functional connectivity ...")
-                # load
-                with gzip.open(fc_file, "r") as f:
-                    Xfc = pickle.load(f)
-                X = Xfc[method]
-            else:
-                preproc = clone(clf.named_steps['functional_connectivity'])
-                X = preproc.transform(X=X)
-                # save
-                with gzip.open(fc_file, "w") as f:  # save
-                    Xfc = {method: X}
-                    pickle.dump(Xfc, f)
-            clf.steps.pop(content.index('functional_connectivity'))
-        # if 'net_metric' in content:
-            #compute net mtric
-        # else:
-            # concatenate connectivity matrix
+                file_name = "{0}_{1}_{2}_{3}_{4}.gz"\
+                    .format(estimator, dataset.code, str(subject).zfill(3), "-".join(list(X.event_id)), method)
+                fc_file = os.path.join(file_path, file_name)
+                if os.path.exists(fc_file):
+                    print("Loading {0} ...".format(estimator))
+                    # load
+                    with gzip.open(fc_file, "r") as f:
+                        Xfc = pickle.load(f)
+                    X._data = Xfc[method]
+                else:
+                    print("Computing {0} ...".format(estimator))
+                    preproc = clone(clf.named_steps[estimator])
+                    # compute estimator
+                    X._data = preproc.transform(X=X)
+                    # save
+                    with gzip.open(fc_file, "w") as f:  # save
+                        Xfc = {method: X._data}
+                        pickle.dump(Xfc, f)
+                step_index = [i for i, (name, _) in enumerate(clf.steps) if name == estimator][0]
+                clf.steps.pop(step_index)
+            # else:
+                # concatenate connectivity matrix
 
-        return X, clf
+        return X._data, clf

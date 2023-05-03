@@ -33,22 +33,22 @@ fmin = parameterDict['fmin']
 fmax = parameterDict['fmax']
 
 # for rh vs lh
-# datasets = [Cho2017(), Lee2019_MI(), Schirrmeister2017(), Weibo2014(), Zhou2016()]
-# montages = ['standard_1020', 'standard_1005', 'standard_1005', 'standard_1020', 'standard_1020']
-datasets = [BNCI2014001()]
-montages = ['standard_1020']
+datasets = [Cho2017(), Lee2019_MI(), Schirrmeister2017(), Weibo2014(), Zhou2016()]
+montages = ['standard_1020', 'standard_1005', 'standard_1005', 'standard_1020', 'standard_1020']
+# datasets = [BNCI2014001()]
+# montages = ['standard_1020']
 
 
-network_metrics = {'s': ['strength'],
-                   'lat': ['local_laterality'],
-                   'seg': ['segregation'],
-                   'intg': ['integration'],
+network_metrics = {'s': 'strength',
+                   # 'lat': 'local_laterality',
+                   # 'seg': 'segregation',
+                   # 'intg': 'integration',
                    }
 
 for name, metric in network_metrics.items():
     pipeline = {"coh+{0}+SVM".format(name): make_pipeline(
         functional_connectivity(method="coh", fmin=fmin, fmax=fmax),
-        net_metric(metric=metric),
+        net_metric(method=metric),
         SVC(kernel='linear'))}
 
 paradigm = LeftRightImagery(fmin=fmin, fmax=fmax)  # for rh vs lh
