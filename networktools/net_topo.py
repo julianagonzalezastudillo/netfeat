@@ -1,8 +1,8 @@
 import sys
 
-import networkx as nx
-from itertools import permutations
-from networkx.exception import NetworkXNoPath
+# import networkx as nx
+# from itertools import permutations
+# from networkx.exception import NetworkXNoPath
 import numpy as np
 import re
 
@@ -20,28 +20,30 @@ class bcolors:
 
 
 def channel_idx(ch_names, positions):
-    ch_names = [ch.upper() for ch in ch_names]
-    RH_idx = []
-    LH_idx = []
-    LH_idx_aux = []
-    CH_idx = []
-    CH_bis_idx = []
-    CH_idx_aux = []
 
+    # Convert channel names to uppercase
+    ch_names = [ch.upper() for ch in ch_names]
+
+    RH_idx = []          # Right Hemisphere channel indices
+    LH_idx = []          # Left Hemisphere channel indices
+    CH_idx = []          # Central line channel indices
+    CH_bis_idx = []      # Additional channel indices
+
+    # Accumulate all left and central channels
     for i, ch in enumerate(ch_names):
         last_char = ch[-1]
 
         if last_char == 'H':
             if int(ch[-2]) % 2 != 0:
-                LH_idx_aux.append(i)
+                LH_idx.append(i)
         elif last_char.isdigit() and int(last_char) % 2 != 0:
-            LH_idx_aux.append(i)
+            LH_idx.append(i)
         elif last_char == 'Z':
-            CH_idx_aux.append(i)
+            CH_idx.append(i)
 
     ch_miss = []
-    ch_disc = []
-    for i in LH_idx_aux:
+    # Find the homologous pair of channels and the closest central to the pair
+    for i in LH_idx:
         ch_s = re.findall(r'\D+', ch_names[int(i)])  # string
         ch_n = re.findall(r'\d+', ch_names[int(i)])  # number
 
@@ -52,40 +54,26 @@ def channel_idx(ch_names, positions):
         ch = ch_s[0] + 'Z'
 
         if ch in ch_names:
-            CH_idx = np.append(CH_idx, ch_names.index(ch))
-
-        if ch in ch_names:
-            CH_bis_idx = np.append(CH_bis_idx, ch_names.index(ch))
-            RH_idx = np.append(RH_idx, ch_names.index(rh))
-            LH_idx = np.append(LH_idx, ch_names.index(ch_names[int(i)]))
+            CH_bis_idx.append(ch_names.index(ch))
+            RH_idx.append(ch_names.index(rh))
         else:
-            # find closest
-            dist = []
-            for cz in CH_idx_aux:
-                a = positions[int(cz)]
-                b = positions[int(i)]
-                dist = np.append(dist, np.linalg.norm(a - b))
+            # Find the closest channel index
+            dist = [np.linalg.norm(positions[cz] - positions[i]) for cz in CH_idx]
             cz_idx = np.argmin(dist)
-            CH_bis_idx = np.append(CH_bis_idx, CH_idx_aux[cz_idx])
-            LH_idx = np.append(LH_idx, ch_names.index(ch_names[int(i)]))
+            CH_bis_idx.append(CH_idx[cz_idx])
+            # If right hemisphere channel not found, discard current left hemisphere channel
             try:
-                RH_idx = np.append(RH_idx, ch_names.index(rh))
+                RH_idx.append(ch_names.index(rh))
             except ValueError:
-                # print('Chanel {0} is not included in the montage'.format(rh))
-                # print('Then channel {0} is not consider'.format(ch_names[int(i)]))
-                LH_idx = LH_idx[:-1]
-                CH_bis_idx = CH_bis_idx[:-1]
-                pass
+                LH_idx.pop(LH_idx.index(i))
+                CH_bis_idx.pop()
+                ch_miss.append(ch_names[i])
+                continue
 
-            # ch_miss = np.append(ch_miss, ch)
-            # ch_disc = np.append(ch_disc, rh)
-            # ch_disc = np.append(ch_disc, ch_names[int(i)])
+    if ch_miss:
+        print(bcolors.WARNING + "Warning: Channel {0} is not included in the list".format(ch_miss) + bcolors.ENDC)
 
-    # if print_flag == True:
-    #    print(bcolors.WARNING + "Warning: Channel {0} is not included in the list, then channels {1} are discarded for "
-    #                            "the computation of laterality metrics".format(ch_miss, ch_disc) + bcolors.ENDC)
-
-    return RH_idx.astype(int), LH_idx.astype(int), np.array(CH_idx_aux).astype(int), CH_bis_idx.astype(int)
+    return np.array(RH_idx), np.array(LH_idx), np.array(CH_idx), np.array(CH_bis_idx)
 
 
 def local_laterality(X, ch_names, positions, hemisphere=None):
