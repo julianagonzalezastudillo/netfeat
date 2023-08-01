@@ -19,7 +19,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-def channel_idx(ch_names, positions):
+def channel_idx(ch_names, positions, print_ch=False):
 
     # Convert channel names to uppercase
     ch_names = [ch.upper() for ch in ch_names]
@@ -73,7 +73,32 @@ def channel_idx(ch_names, positions):
     if ch_miss:
         print(bcolors.WARNING + "Warning: Channel {0} is not included in the list".format(ch_miss) + bcolors.ENDC)
 
+    if print_ch:
+        LH_names = [ch_names[index] for index in LH_idx]
+        print('LH: {0}'.format(LH_names))
+        RH_names = [ch_names[index] for index in RH_idx]
+        print('RH: {0}'.format(RH_names))
+        CH_names = [ch_names[index] for index in CH_bis_idx]
+        print('CH: {0}'.format(CH_names))
+
     return np.array(RH_idx), np.array(LH_idx), np.array(CH_idx), np.array(CH_bis_idx)
+
+
+def h_modules(X, RH_idx, LH_idx, CH_idx, CH_bis_idx):
+
+    LL = X[LH_idx, :][:, LH_idx]
+    LC = X[LH_idx, :][:, CH_idx]
+    LR = X[LH_idx, :][:, RH_idx]
+
+    RR = X[RH_idx, :][:, RH_idx]
+    RC = X[RH_idx, :][:, CH_idx]
+    RL = X[RH_idx, :][:, LH_idx]
+
+    CC = X[CH_bis_idx, :][:, CH_idx]
+    CR = X[CH_bis_idx, :][:, RH_idx]
+    CL = X[CH_bis_idx, :][:, LH_idx]
+
+    return LL, LC, LR, RR, RC, RL, CC, CL, CR
 
 
 def local_laterality(X, ch_names, positions, hemisphere=None):
@@ -85,17 +110,9 @@ def local_laterality(X, ch_names, positions, hemisphere=None):
     :return:
     """
     RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
-    # LH_names = [ch_names[index] for index in LH_idx]
-    # print('LH: {0}'.format(LH_names))
-    # RH_names = [ch_names[index] for index in RH_idx]
-    # print('RH: {0}'.format(RH_names))
-    # CH_names = [ch_names[index] for index in CH_idx]
-    # print('CH: {0}'.format(CH_names))
 
     # Extract sub matrices for left hemisphere, right hemisphere, and central channels
-    LH = X[LH_idx, :][:, LH_idx]
-    RH = X[RH_idx, :][:, RH_idx]
-    CH = X[CH_bis_idx, :][:, CH_idx]
+    LH, _, _, RH, _, _, CH, _, _ = h_modules(X, RH_idx, LH_idx, CH_idx, CH_bis_idx)
 
     if hemisphere == 'left':
         lat_homol = np.sum(LH, axis=1) / np.sum(CH, axis=1)
@@ -110,3 +127,29 @@ def local_laterality(X, ch_names, positions, hemisphere=None):
         lat_homol[len(RH_idx):] = (np.sum(RH, axis=1) - np.sum(LH, axis=1)) / np.sum(CH, axis=1)
 
     return lat_homol
+
+
+def integration(X, ch_names, positions, hemisphere=None):
+    RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
+    LL, LC, LR, RR, RC, RL, CC, CL, CR = h_modules(X, RH_idx, LH_idx, CH_idx, CH_bis_idx)
+
+    if hemisphere == 'left':
+        # Compute integration for the left hemisphere
+        num_L = LL.sum(axis=1) + LC.sum(axis=1) + LR.sum(axis=1)
+        denom = CL.sum(axis=1) + CR.sum(axis=1) + CC.sum(axis=1)
+        intg = num_L / denom
+
+    elif hemisphere == 'right':
+        # Compute integration for the right hemisphere
+        num_R = RR.sum(axis=1) + RC.sum(axis=1) + RL.sum(axis=1)
+        denom = CL.sum(axis=1) + CR.sum(axis=1) + CC.sum(axis=1)
+        intg = num_R / denom
+
+    else:
+        # Compute integration for both hemispheres
+        num_L = LL.sum(axis=1) + LC.sum(axis=1) + LR.sum(axis=1) - (RR.sum(axis=1) + RC.sum(axis=1) + RL.sum(axis=1))
+        num_R = RR.sum(axis=1) + RC.sum(axis=1) + RL.sum(axis=1) - (LL.sum(axis=1) + LC.sum(axis=1) + LR.sum(axis=1))
+        denom = CL.sum(axis=1) + CR.sum(axis=1) + CC.sum(axis=1)
+        intg = np.concatenate([num_L / denom, num_R / denom])
+
+    return intg
