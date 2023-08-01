@@ -58,6 +58,10 @@ class net_metric(TransformerMixin, BaseEstimator):
             for i, fc_data in enumerate(Xfc):
                 metric_matrix[i, :] = net_topo.integration(fc_data, ch_names, ch_pos)
 
+        elif method == 'segregation':
+            metric_matrix = np.zeros((len(Xfc), len(rh_idx) + len(lh_idx)), dtype=float)
+            for i, fc_data in enumerate(Xfc):
+                metric_matrix[i, :] = net_topo.segregation(fc_data, ch_names, ch_pos)
 
         # elif method == 'spatial_strength':
         #     metric_matrix = np.zeros((len(Xfc), n_chan), dtype = float)
@@ -108,13 +112,6 @@ class net_metric(TransformerMixin, BaseEstimator):
         #         DIJ = net_spatial.distances_matrix(Xfc[i, :, :],
         #                                             ch_pos)  # check electrodes positions are the same in both arrays
         #         metric_matrix[i, :] = net_spatial.spatial_local_laterality_all(Xfc[i, :, :], DIJ, ch_names, ch_pos)
-
-        # elif method == 'segregation':
-        #     rh_idx, lh_idx, ch_idx, ch_bis_idx = net_topo.channel_idx(ch_names, ch_pos)
-        #     n_chan = len(rh_idx) + len(lh_idx)
-        #     metric_matrix = np.zeros((len(Xfc), n_chan), dtype = float)
-        #     for i in range(len(Xfc)):
-        #         metric_matrix[i, :] = net_topo.segregation(Xfc[i, :, :], ch_names, ch_pos)
 
         # elif method == 'seg2':
         #     rh_idx, lh_idx, ch_idx, ch_bis_idx = net_topo.channel_idx(ch_names, ch_pos)

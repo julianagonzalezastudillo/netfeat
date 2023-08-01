@@ -130,6 +130,13 @@ def local_laterality(X, ch_names, positions, hemisphere=None):
 
 
 def integration(X, ch_names, positions, hemisphere=None):
+    """
+    order LEFT-RIGHT. Calculate integration for each node, considering both hemispheres
+    X: connectivity matrix
+    ch_names: channel names
+    positions: channels positions in the same order as ch_names
+    :return:
+    """
     RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
     LL, LC, LR, RR, RC, RL, CC, CL, CR = h_modules(X, RH_idx, LH_idx, CH_idx, CH_bis_idx)
 
@@ -153,3 +160,36 @@ def integration(X, ch_names, positions, hemisphere=None):
         intg = np.concatenate([num_L / denom, num_R / denom])
 
     return intg
+
+
+def segregation(X, ch_names, positions, hemisphere=None):
+    """
+    order LEFT-RIGHT. Calculate segregation for each node, considering both hemispheres
+    X: connectivity matrix
+    ch_names: channel names
+    positions: channels positions in the same order as ch_names
+    :return:
+    """
+    RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
+    LL, LC, LR, RR, RC, RL, CC, CL, CR = h_modules(X, RH_idx, LH_idx, CH_idx, CH_bis_idx)
+
+    if hemisphere == 'left':
+        # Compute segregation for the left hemisphere
+        num_L = np.sum(LL, axis=1) + np.sum(LC, axis=1) - np.sum(LR, axis=1)
+        denom = np.sum(CL, axis=1) + np.sum(CR, axis=1) + np.sum(CC, axis=1)
+        seg = num_L / denom
+
+    elif hemisphere == 'right':
+        # Compute segregation for the right hemisphere
+        num_R = np.sum(RR, axis=1) + np.sum(RC, axis=1) - np.sum(RL, axis=1)
+        denom = np.sum(CL, axis=1) + np.sum(CR, axis=1) + np.sum(CC, axis=1)
+        seg = num_R / denom
+
+    else:
+        # Compute segregation for both hemispheres
+        num_L = np.sum(LL, axis=1) + np.sum(LC, axis=1) - np.sum(LR, axis=1) - (np.sum(RR, axis=1) + np.sum(RC, axis=1) - np.sum(RL, axis=1))
+        num_R = np.sum(RR, axis=1) + np.sum(RC, axis=1) - np.sum(RL, axis=1) - (np.sum(LL, axis=1) + np.sum(LC, axis=1) - np.sum(LR, axis=1))
+        denom = np.sum(CL, axis=1) + np.sum(CR, axis=1) + np.sum(CC, axis=1)
+        seg = np.concatenate([num_L / denom, num_R / denom])
+
+    return seg
