@@ -57,14 +57,14 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                 [add_attributes(clf_preproc[clf_preproc.steps[i][0]], subject=subject, dataset=dataset, pipeline=name,
                                 ch_names=X.ch_names, cv_splits=cv.n_splits) for i in range(len(clf_preproc.steps))]
 
-                X, clf = self.fc_net(X, clf_preproc)
+                X_, clf = self.fc_net(X, clf_preproc)
 
                 for session in dataset.sessions:
                     ix = metadata.session == session
-                    X_session = np.array(X[ix])
+                    X_session = np.array(X_[ix])
                     le = LabelEncoder()  # to change string labels to numerical ones
                     y_session = le.fit_transform(y[ix])
-                    nchan = np.array(X).shape[1]
+                    nchan = np.array(X_).shape[1]
                     [add_attributes(clf[clf.steps[i][0]], session=session) for i in range(len(clf.steps))]
 
                     # with suppress_stdout():
@@ -74,7 +74,7 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                                           cv=cv,
                                           scoring=self.paradigm.scoring,
                                           n_jobs=self.n_jobs,
-                                          error_score = self.error_score
+                                          error_score=self.error_score
                                           )
                     score = acc.mean()
                     score_std = acc.std()
@@ -95,7 +95,8 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                         n_cv = 1
                     save_features.n_cv = 1
                     dataset_res.append(res)
-        return pd.DataFrame(dataset_res)
+                    yield res
+        # return pd.DataFrame(dataset_res)
 
     def fc_net(self, X, clf_preproc):
         """
