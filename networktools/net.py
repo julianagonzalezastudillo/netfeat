@@ -45,7 +45,7 @@ class net_metric(TransformerMixin, BaseEstimator):
         if method == 'strength':
             metric_matrix = np.zeros((len(Xfc), n_chan), dtype=float)
             for i in range(len(Xfc)):
-                G = nx.from_numpy_matrix(Xfc[i, :, :])  # to nx format
+                G = nx.from_numpy_array(Xfc[i, :, :])  # to nx format
                 metric_matrix[i, :] = [v for k, v in G.degree(weight='weight')]
                 
         elif method == 'local_laterality':
