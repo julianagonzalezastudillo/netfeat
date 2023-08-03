@@ -27,6 +27,7 @@ from moabb.evaluations.base import BaseEvaluation
 from moabb_settings import add_attributes
 import save_features
 import logging
+from tqdm.auto import tqdm
 
 
 log = logging.getLogger(__name__)
@@ -41,17 +42,14 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
         super().__init__(**kwargs)
 
     def evaluate(self, dataset, pipelines):
+        print(' ')
         print('=' * 100)
         print(bcolors.HEADER + "dataset: {0}".format(type(dataset).__name__) + bcolors.ENDC)
 
-        dataset_res = list()
-        for subject in dataset.subject_list:
+        for subject in tqdm(dataset.subject_list, desc=f"{dataset.code}-WithinSession", postfix="\n"):
             run_pipes = self.results.not_yet_computed(pipelines, dataset, subject)
             if len(run_pipes) == 0:
                 continue
-
-            print('-' * 100)
-            print(bcolors.HEADER + "sub: {0}".format(subject) + bcolors.ENDC)
 
             X, y, metadata = self.paradigm.get_data(dataset=dataset, subjects=[subject], return_epochs=True)
             dataset.sessions = np.unique(metadata.session)
@@ -163,13 +161,13 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                     .format(estimator, dataset.code, str(subject).zfill(3), "-".join(list(X.event_id)), method)
                 fc_file = os.path.join(file_path, file_name)
                 if os.path.exists(fc_file):
-                    print("Loading {0} ...".format(estimator))
+                    # print("Loading {0} ...".format(estimator))
                     # load
                     with gzip.open(fc_file, "r") as f:
                         Xfc = pickle.load(f)
                     X._data = Xfc[method]
                 else:
-                    print("Computing {0} ...".format(estimator))
+                    # print("Computing {0} ...".format(estimator))
                     preproc = clone(clf.named_steps[estimator])
                     # compute estimator
                     X._data = preproc.transform(X=X)
