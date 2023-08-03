@@ -1,10 +1,10 @@
 {
-    "fmin": 8,
-    "fmax": 35,
-    "csp_component_order": "alternate",
-    "csp_n_components": 8,
-    "cv": 5,
-    "ch_names": {
+  "fmin": 8,
+  "fmax": 35,
+  "csp_component_order": "alternate",
+  "csp_n_components": 8,
+  "cv": 5,
+  "ch_names": {
         "BNCI2014001": ["FC3", "FC1", "C5", "C3", "C1", "CP3", "CP1", "P1", "Fz", "FCz", "Cz", "CPz", "Pz", "POz", "FC4",
                    "FC2", "C6", "C4", "C2", "CP4", "CP2", "P2"],
         "Cho2017": ["Fp1", "AF7", "AF3", "F7", "F5", "F3", "F1", "FT7", "FC5", "FC3", "FC1", "T7", "C5", "C3", "C1", "TP7",
@@ -36,5 +36,13 @@
         "Zhou2016": ["Fp1", "FC3", "C3", "CP3", "O1",
             "FCz", "Cz", "CPz", "Oz",
             "Fp2", "FC4", "C4", "CP4", "O2"]
+    },
+  "montage": {
+        "001-2014": "standard_1020",
+        "Cho2017": "standard_1020",
+        "Lee2019_MI": "standard_1005",
+        "Schirrmeister2017": "standard_1005",
+        "Weibo 2014": "standard_1020",
+        "Zhou 2016": "standard_1020"
     }
 }
