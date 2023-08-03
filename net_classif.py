@@ -1,8 +1,9 @@
 import os
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import SVC
-import pandas as pd
 
+import warnings
+import moabb
 from moabb.datasets import (BNCI2014001,
                             BNCI2015001,
                             BNCI2015004,
@@ -23,6 +24,9 @@ from networktools.net import net_metric
 import json
 import pathlib
 
+
+moabb.set_log_level("info")
+warnings.filterwarnings("ignore")
 
 path = pathlib.Path().resolve()
 jsonfile = "params.json"
