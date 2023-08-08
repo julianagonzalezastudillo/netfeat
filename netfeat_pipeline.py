@@ -50,9 +50,8 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
             run_pipes = self.results.not_yet_computed(pipelines, dataset, subject)
             if len(run_pipes) == 0:
                 continue
-
+            subject = 2
             X, y, metadata = self.paradigm.get_data(dataset=dataset, subjects=[subject], return_epochs=True)
-            dataset.sessions = np.unique(metadata.session)
 
             for name, clf_preproc in pipelines.items():
                 t_start = time()
@@ -62,7 +61,7 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
 
                 X_, clf = self.fc_net(X, clf_preproc)
 
-                for session in dataset.sessions:
+                for session in np.unique(metadata.session):
                     ix = metadata.session == session
                     X_session = np.array(X_[ix])
                     le = LabelEncoder()  # to change string labels to numerical ones
