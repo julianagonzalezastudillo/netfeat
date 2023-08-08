@@ -9,7 +9,6 @@ from moabb.datasets import (BNCI2014001,
                             Cho2017,
                             Lee2019_MI,
                             MunichMI,
-                            Ofner2017,
                             PhysionetMI,
                             Shin2017A,
                             Schirrmeister2017,
@@ -37,7 +36,8 @@ fmax = parameterDict['fmax']
 n_components = parameterDict['csp_n_components']
 component_order = parameterDict['csp_component_order']
 
-datasets = [BNCI2014001(), Cho2017(), Lee2019_MI(), MunichMI(), Ofner2017(), PhysionetMI(), Shin2017A(accept=True), Schirrmeister2017(), Weibo2014(), Zhou2016()]
+datasets = [BNCI2014001(), Cho2017(), Lee2019_MI(), MunichMI(), PhysionetMI(), Shin2017A(accept=True),
+            Schirrmeister2017(), Weibo2014(), Zhou2016()]
 
 pipeline = {"CSP+PS+SVM": make_pipeline(
     CSP(n_components=n_components, reg=None, transform_into='average_power', component_order=component_order),
