@@ -46,11 +46,12 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
         print('=' * 100)
         print(bcolors.HEADER + "dataset: {0}".format(type(dataset).__name__) + bcolors.ENDC)
 
-        for subject in tqdm(dataset.subject_list, desc=f"{dataset.code}-WithinSession", postfix="\n"):
+        for subject in tqdm(dataset.subject_list, desc=f"{dataset.code}-WithinSession"):
+            print(" ")  # to avoid writing log in the same line as tqdm
             run_pipes = self.results.not_yet_computed(pipelines, dataset, subject)
             if len(run_pipes) == 0:
                 continue
-            subject = 2
+
             X, y, metadata = self.paradigm.get_data(dataset=dataset, subjects=[subject], return_epochs=True)
 
             for name, clf_preproc in pipelines.items():
@@ -146,7 +147,7 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
         clf = deepcopy(clf_preproc)
         content = [clf.steps[i][0] for i in range(len(clf.steps))]
 
-        for estimator in ['functional_connectivity', 'net_metric']:
+        for estimator in ['functionalconnectivity', 'netmetric']:
             if estimator in content:
                 method = clf[estimator].method
                 subject = clf.named_steps[estimator].subject
