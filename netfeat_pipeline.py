@@ -179,4 +179,5 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
             # else:
                 # concatenate connectivity matrix
 
+        [add_attributes(clf[clf.steps[i][0]], metric=method) for i in range(len(clf.steps))]
         return X._data, clf

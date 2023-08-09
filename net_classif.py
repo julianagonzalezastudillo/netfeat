@@ -18,8 +18,10 @@ from moabb.datasets import (BNCI2014001,
 from moabb.paradigms import LeftRightImagery
 
 from netfeat_pipeline import WithinSessionEvaluation_netfeat
-from networktools.fc import functional_connectivity
-from networktools.net import net_metric
+from networktools.fc import FunctionalConnectivity
+from networktools.net import NetMetric
+from networktools.channelselection import NetSelection
+
 
 import json
 import pathlib
@@ -36,13 +38,13 @@ if jsonfile in os.listdir(path):
         parameterDict = json.load(jsonfile)
 fmin = parameterDict['fmin']
 fmax = parameterDict['fmax']
+montages = parameterDict['montage']
+fc = "coh"
 
 # for rh vs lh
 # datasets = [BNCI2014001(), Cho2017(), Lee2019_MI(), Schirrmeister2017(), Weibo2014(), Zhou2016()]
 # montages = ['standard_1020', 'standard_1020', 'standard_1005', 'standard_1005', 'standard_1020', 'standard_1020']
-datasets = [BNCI2014001(), Zhou2016()]
-montages = ['standard_1020', 'standard_1020']
-
+datasets = [BNCI2014001()]
 
 network_metrics = {'s': 'strength',
                    'lat': 'local_laterality',
@@ -52,40 +54,25 @@ network_metrics = {'s': 'strength',
 
 pipeline = {}  # Initialize an empty dictionary
 for name, metric in network_metrics.items():
-    pipeline["coh+{0}+SVM".format(name)] = make_pipeline(
-        functional_connectivity(method="coh", fmin=fmin, fmax=fmax),
-        net_metric(method=metric),
+    pipeline["{0}+{1}+SVM".format(fc, name)] = make_pipeline(
+        FunctionalConnectivity(method=fc, fmin=fmin, fmax=fmax),
+        NetMetric(method=metric),
+        NetSelection(),
         SVC(kernel='linear')
     )
 
 paradigm = LeftRightImagery(fmin=fmin, fmax=fmax)  # for rh vs lh
 
-for dt, mtg in zip(datasets, montages):
-    dt.montage = mtg
+for dt in datasets:
+    dt.montage = montages[dt.code]
 
-cross_val = WithinSessionEvaluation_netfeat(
-    datasets=datasets,
-    paradigm=paradigm,
-    overwrite=True,
-    hdf5_path=None,
-    )
-results = cross_val.process(pipeline)
-    # results.to_csv("./results/classification/{0}_rh_lh_net.csv".format(dt.code), index=False)
+for dt in datasets:
+    cross_val = WithinSessionEvaluation_netfeat(
+        datasets=[dt],
+        paradigm=paradigm,
+        overwrite=True,
+        hdf5_path=None,
+        )
+    results = cross_val.process(pipeline)
+    results.to_csv("./results/classification/{0}_rh_lh_net.csv".format(dt.code), index=False)
 
-#%%
-# import networktools.net_spatial as net_spatial
-# dataset = Schirrmeister2017()
-# montage_name = 'standard_1005'
-# X, y, metadata = paradigm.get_data(dataset=dataset, subjects=[1], return_epochs=True)
-# ch_names = X.ch_names
-# positions = net_spatial.positions_matrix(montage_name, X.ch_names)
-# 
-# RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
-# LH_names = [ch_names[index] for index in LH_idx]
-# print('LH: {0}'.format(LH_names))
-# RH_names = [ch_names[index] for index in RH_idx]
-# print('RH: {0}'.format(RH_names))
-# CH_names_bis = [ch_names[index] for index in CH_bis_idx]
-# print('CH: {0}'.format(CH_names_bis))
-# CH_names = [ch_names[index] for index in CH_idx]
-# print('CH: {0}'.format(CH_names))
