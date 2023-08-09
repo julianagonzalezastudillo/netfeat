@@ -8,7 +8,7 @@ This module is design to compute network metrics based on functional connectivit
 import numpy as np
 import pandas as pd
 from time import time
-from tools import bcolors, suppress_stdout
+from tools import bcolors
 import os
 import pickle
 import gzip
@@ -58,7 +58,8 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                 t_start = time()
                 cv = StratifiedKFold(5, shuffle=False, random_state=None)
                 [add_attributes(clf_preproc[clf_preproc.steps[i][0]], subject=subject, dataset=dataset, pipeline=name,
-                                ch_names=X.ch_names, cv_splits=cv.n_splits) for i in range(len(clf_preproc.steps))]
+                                ch_names=X.ch_names, cv_splits=cv.n_splits, sessions_name=np.unique(metadata.session))
+                 for i in range(len(clf_preproc.steps))]
 
                 X_, clf = self.fc_net(X, clf_preproc)
 
@@ -70,7 +71,6 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                     nchan = np.array(X_).shape[1]
                     [add_attributes(clf[clf.steps[i][0]], session=session) for i in range(len(clf.steps))]
 
-                    # with suppress_stdout():
                     acc = cross_val_score(clf,
                                           X_session,
                                           y_session,
@@ -97,7 +97,6 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                         global n_cv
                         n_cv = 1
                     save_features.n_cv = 1
-                    # dataset_res.append(res)
                     yield res
 
     def process(self, pipelines, param_grid=None):

@@ -24,7 +24,7 @@ def save_global(self):
     save_features.df_select = save_features.df_select.append(selec, ignore_index=True)
     if self.subject == self.dataset.subject_list[-1] \
             and save_features.n_cv == self.cv_splits\
-            and self.session == self.dataset.sessions[-1]:
+            and self.session == self.sessions_name[-1]:
         df_save = save_features.df_select[(save_features.df_select["dataset"] == self.dataset.code) &
                                           (save_features.df_select["pipeline"] == self.pipeline)]
         df_save.to_csv("./results/select_features/select_features_{0}_{1}.csv"
