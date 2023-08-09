@@ -5,6 +5,7 @@ import sys
 # from networkx.exception import NetworkXNoPath
 import numpy as np
 import re
+import mne
 
 
 class bcolors:
@@ -17,6 +18,23 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def positions_matrix(montage_name, ch_names):
+    """
+
+    :param montage_name: mne montage name
+    :param ch_names: channel names
+    :return: array containing the 3D dimensional positions of channels contained in ch_names
+    """
+    montage = mne.channels.make_standard_montage(montage_name)
+    montage_ch_pos = list(montage._get_ch_pos().items())
+    ch_names_upper = [ch.upper() for ch in ch_names]
+    montage_ch = [row[0].upper() for row in montage_ch_pos]
+    montage_pos = np.array([row[1] for row in montage_ch_pos])
+    montage_idx = [montage_ch.index(name) for name in ch_names_upper]
+    ch_pos = montage_pos[montage_idx]
+    return ch_pos
 
 
 def channel_idx(ch_names, positions, print_ch=False):
