@@ -12,8 +12,8 @@ This module is design to compute functional connectivity metrics on MOABB datase
 from sklearn.covariance import ledoit_wolf
 
 from mne import set_log_level, EpochsArray
-from mne.connectivity import spectral_connectivity
-from mne.connectivity import envelope_correlation
+from mne_connectivity import spectral_connectivity_epochs
+from mne_connectivity import envelope_correlation
 import numpy as np
 
 
@@ -80,7 +80,7 @@ def _compute_fc_subtrial(epoch, delta=1, ratio=0.5, method="coh", fmin=8, fmax=3
         subtrials[i, :, :] = np.expand_dims(X[:, idx_start:idx_stop], axis=0)
     sub_epoch = EpochsArray(np.squeeze(subtrials), info=epoch.info)
     if method in spectral_met:
-        r = spectral_connectivity(
+        r = spectral_connectivity_epochs(
             sub_epoch,
             method=method,
             mode="multitaper",
@@ -92,7 +92,8 @@ def _compute_fc_subtrial(epoch, delta=1, ratio=0.5, method="coh", fmin=8, fmax=3
             mt_adaptive=False,
             n_jobs=1,
         )
-        c = np.squeeze(r[0])
+        # c = np.squeeze(r[0])
+        c = r.get_data(output='dense')[:, :, 0]
         c = c + c.T - np.diag(np.diag(c)) + np.identity(nb_chan)
     elif method == "aec":
         # filter in frequency band of interest

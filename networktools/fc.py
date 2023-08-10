@@ -3,7 +3,7 @@ import networktools.fc_mne as fc_mne
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class functional_connectivity(TransformerMixin, BaseEstimator):
+class FunctionalConnectivity(TransformerMixin, BaseEstimator):
 
     def __init__(self, method='coh', fmin=8, fmax=35):
         self.method = method

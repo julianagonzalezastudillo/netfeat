@@ -10,23 +10,23 @@ def add_attributes(obj, **kwargs):
         setattr(obj, key, value)
 
 
-def save_global(self):
+def save_global(params):
     selec = {
-        "dataset": self.dataset.code,
-        "subject": self.subject,
-        "session": self.session,
-        "pipeline": self.pipeline,
-        "metric": self.metric,
+        "dataset": params.dataset.code,
+        "subject": params.subject,
+        "session": params.session,
+        "pipeline": params.pipeline,
+        "metric": params.metric,
         "cv": save_features.n_cv,  # n_cv,
-        "ch": self.subelec_names,
-        "t-val": self.t_val,
+        "ch": params.subelec_names,
+        "t-val": [round(val, 2) for val in params.t_val],
     }
     save_features.df_select = save_features.df_select.append(selec, ignore_index=True)
-    if self.subject == self.dataset.subject_list[-1] \
-            and save_features.n_cv == self.cv_splits\
-            and self.session == self.sessions_name[-1]:
-        df_save = save_features.df_select[(save_features.df_select["dataset"] == self.dataset.code) &
-                                          (save_features.df_select["pipeline"] == self.pipeline)]
+    if params.subject == params.dataset.subject_list[-1] \
+            and save_features.n_cv == params.cv_splits\
+            and params.session == params.sessions_name[-1]:
+        df_save = save_features.df_select[(save_features.df_select["dataset"] == params.dataset.code) &
+                                          (save_features.df_select["pipeline"] == params.pipeline)]
         df_save.to_csv("./results/select_features/select_features_{0}_{1}.csv"
-                       .format(self.dataset.code, self.pipeline), index=False)
+                       .format(params.dataset.code, params.pipeline), index=False)
     save_features.n_cv = save_features.n_cv + 1

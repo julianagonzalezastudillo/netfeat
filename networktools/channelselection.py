@@ -16,16 +16,19 @@ import networktools.net_topo as net_topo
 
 class NetSelection(TransformerMixin, BaseEstimator):
 
-    def __init__(self, subject=None, name=None, session=None, metric=None, ch_names=None,
-                 montage_name=None, pipeline=None):
+    def __init__(self, dataset=None, subject=None, name=None, session=None, sessions_name=None, metric=None,
+                 ch_names=None, montage_name=None, pipeline=None, cv_splits=None):
+        self.dataset = dataset
         self.subject = subject
         self.name = name
         self.session = session
+        self.sessions_name = sessions_name
         self.metric = metric
         self.ch_names = ch_names
         self.montage_name = montage_name
         self.scoring = 'roc_auc'
         self.pipeline = pipeline
+        self.cv_splits = cv_splits
 
     def fit(self, X, y):
         self.selection = self._get_selection(X, y)
@@ -137,3 +140,34 @@ class NetSelection(TransformerMixin, BaseEstimator):
         selection = [best_features[i] for i in indixes[1]]
 
         return selection
+
+
+    def _net_train_test(self, X, y):
+        # Split the data into training and testing sets
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        # Forward selection using scikit-learn and MNE-Python with SVM
+        selected_features = []
+        remaining_features = list(range(X_train.shape[1]))
+        while remaining_features:
+            best_feature = None
+            best_score = -1
+            for feature in remaining_features:
+                candidate_features = selected_features + [feature]
+                X_train_selected = X_train[:, candidate_features]
+                # Create a SVM classifier and fit it on the selected features
+                classifier = SVC(kernel='linear')
+                classifier.fit(X_train_selected, y_train)
+                # Evaluate the classifier on the testing set
+                X_test_selected = X_test[:, candidate_features]
+                y_pred = classifier.predict(X_test_selected)
+                score = accuracy_score(y_test, y_pred)
+                if score > best_score:
+                    best_score = score
+                    best_feature = feature
+            if best_feature is not None:
+                selected_features.append(best_feature)
+                remaining_features.remove(best_feature)
+            else:
+                break
+
+        return selected_features

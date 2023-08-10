@@ -176,8 +176,7 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                         pickle.dump(Xfc, f)
                 step_index = [i for i, (name, _) in enumerate(clf.steps) if name == estimator][0]
                 clf.steps.pop(step_index)
+                [add_attributes(clf[clf.steps[i][0]], metric=method) for i in range(len(clf.steps))]
             # else:
                 # concatenate connectivity matrix
-
-        [add_attributes(clf[clf.steps[i][0]], metric=method) for i in range(len(clf.steps))]
         return X._data, clf

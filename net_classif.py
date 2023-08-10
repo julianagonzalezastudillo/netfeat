@@ -5,15 +5,14 @@ from sklearn.svm import SVC
 import warnings
 import moabb
 from moabb.datasets import (BNCI2014001,
-                            BNCI2015001,
-                            BNCI2015004,
-                            Lee2019_MI,
-                            Zhou2016,
-                            MunichMI,
-                            Shin2017A,
                             Cho2017,
+                            Lee2019_MI,
+                            MunichMI,
+                            PhysionetMI,
+                            Shin2017A,
                             Schirrmeister2017,
-                            Weibo2014)
+                            Weibo2014,
+                            Zhou2016)
 
 from moabb.paradigms import LeftRightImagery
 
@@ -42,9 +41,8 @@ montages = parameterDict['montage']
 fc = "coh"
 
 # for rh vs lh
-# datasets = [BNCI2014001(), Cho2017(), Lee2019_MI(), Schirrmeister2017(), Weibo2014(), Zhou2016()]
-# montages = ['standard_1020', 'standard_1020', 'standard_1005', 'standard_1005', 'standard_1020', 'standard_1020']
-datasets = [BNCI2014001()]
+datasets = [BNCI2014001(), Cho2017(), Lee2019_MI(), MunichMI(), PhysionetMI(), Shin2017A(accept=True),
+            Schirrmeister2017(), Weibo2014(), Zhou2016()]
 
 network_metrics = {'s': 'strength',
                    'lat': 'local_laterality',
