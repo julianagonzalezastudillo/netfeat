@@ -24,9 +24,7 @@ def save_global(params):
         "t-val": params.t_val,
     }
     save_features.df_select = save_features.df_select.append(selec, ignore_index=True)
-    # if params.subject == params.dataset.subject_list[-1] \
-    #         and save_features.n_cv == params.cv_splits\
-    #         and params.session == params.sessions_name[-1]:
+
     if save_features.n_cv == params.cv_splits \
             and params.session == params.sessions_name[-1]:
         df_save = save_features.df_select[(save_features.df_select["dataset"] == params.dataset.code) &
