@@ -16,10 +16,9 @@ import networktools.net_topo as net_topo
 
 class NetSelection(TransformerMixin, BaseEstimator):
 
-    def __init__(self, dataset=None, subject=None, name=None, session=None, sessions_name=None, metric=None,
+    def __init__(self, dataset=None, name=None, session=None, sessions_name=None, metric=None,
                  ch_names=None, montage_name=None, pipeline=None, cv_splits=None):
         self.dataset = dataset
-        self.subject = subject
         self.name = name
         self.session = session
         self.sessions_name = sessions_name
