@@ -58,13 +58,12 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     IEEE/EMBS Conference on Neural Engineering (NER), 2011, 348-351
     """
 
-    def __init__(self, nelec=16, metric='riemann', n_jobs=1, subject=None, dataset=None, session=None,
-                 sessions_name=None, pipeline=None, ch_names=None, cv_splits=None):
+    def __init__(self, nelec=16, metric='riemann', n_jobs=1, dataset=None, session=None, sessions_name=None,
+                 ch_names=None, pipeline=None, cv_splits=None):
         """Init."""
         self.nelec = nelec
         self.metric = metric
         self.n_jobs = n_jobs
-        self.subject = subject
         self.dataset = dataset
         self.session = session
         self.sessions_name = sessions_name

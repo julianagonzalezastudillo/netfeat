@@ -53,11 +53,10 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                 continue
 
             X, y, metadata = self.paradigm.get_data(dataset=dataset, subjects=[subject], return_epochs=True)
-
             for name, clf_preproc in pipelines.items():
                 t_start = time()
                 cv = StratifiedKFold(5, shuffle=False, random_state=None)
-                [add_attributes(clf_preproc[clf_preproc.steps[i][0]], subject=subject, dataset=dataset, pipeline=name,
+                [add_attributes(clf_preproc[clf_preproc.steps[i][0]], dataset=dataset, pipeline=name,
                                 ch_names=X.ch_names, cv_splits=cv.n_splits, sessions_name=np.unique(metadata.session))
                  for i in range(len(clf_preproc.steps))]
 

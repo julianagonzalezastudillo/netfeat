@@ -5,6 +5,8 @@ import pandas as pd
 def init():
     global n_cv
     n_cv = 1
+    global sub
+    sub = 1
 
     column_names = ["dataset", "subject", "session", "pipeline", "metric", "cv", "ch", "t-val"]
     global df_select
