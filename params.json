@@ -38,11 +38,14 @@
             "Fp2", "FC4", "C4", "CP4", "O2"]
     },
   "montage": {
-        "001-2014": "standard_1020",
-        "Cho2017": "standard_1020",
-        "Lee2019_MI": "standard_1005",
-        "Schirrmeister2017": "standard_1005",
-        "Weibo 2014": "standard_1020",
-        "Zhou 2016": "standard_1020"
+    "001-2014": "standard_1020",
+    "Cho2017": "standard_1020",
+    "Grosse-Wentrup 2009": "standard_1020",
+    "Lee2019_MI": "standard_1005",
+    "Physionet Motor Imagery": "standard_1020",
+    "Schirrmeister2017": "",
+    "Shin2017A": "standard_1005",
+    "Weibo 2014": "standard_1020",
+    "Zhou 2016": "standard_1020"
     }
 }
