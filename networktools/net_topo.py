@@ -91,7 +91,20 @@ def channel_idx(ch_names, positions, print_ch=False):
     return np.array(RH_idx), np.array(LH_idx), np.array(CH_idx), np.array(CH_bis_idx)
 
 
-def h_modules(X, RH_idx, LH_idx, CH_idx, CH_bis_idx):
+def channel_idx_MunichMI():
+    lh_idx = [0, 2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 24, 26, 28, 30, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54,
+              56, 58, 60, 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 98, 100, 102, 104, 106,
+              108, 110, 112, 114, 116, 118, 120, 122, 124, 126]
+    rh_idx = [1, 3, 5, 7, 9, 11, 13, 15, 17, 21, 23, 25, 27, 29, 31, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55,
+              57, 59, 61, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 97, 99, 101, 103, 105, 107,
+              109, 111, 113, 115, 117, 119, 121, 123, 125, 127]
+    ch_bis_idx = [95, 17, 31, 31, 18, 32, 17, 31, 18, 62, 63, 62, 63, 62, 63, 31, 31, 61, 61, 62, 63, 64, 17,
+                  31, 18, 61, 62, 63, 64, 61, 61, 61, 17, 62, 31, 63, 18, 18, 18, 64, 64, 64, 32, 32, 17, 17,
+                  17, 17, 62, 62, 62, 31, 31, 31, 31, 18, 18, 18, 18]
+    ch_idx = [17, 18, 31, 32, 61, 62, 63, 64, 95, 96]
+    return rh_idx, lh_idx, ch_idx, ch_bis_idx
+
+def h_modules(X, LH_idx, RH_idx, CH_idx, CH_bis_idx):
 
     LL = X[LH_idx, :][:, LH_idx]
     LC = X[LH_idx, :][:, CH_idx]
@@ -108,18 +121,25 @@ def h_modules(X, RH_idx, LH_idx, CH_idx, CH_bis_idx):
     return LL, LC, LR, RR, RC, RL, CC, CL, CR
 
 
-def local_laterality(X, ch_names, positions, hemisphere=None):
+def local_laterality(X, LH_idx, RH_idx, CH_idx, CH_bis_idx, hemisphere=None):
     """
-    order LEFT-RIGHT. Calculate local laterality for each node, considering both hemispheres
-    X: connectivity matrix
-    ch_names: channel names
-    positions: channels positions in the same order as ch_names
-    :return:
-    """
-    RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
+        Calculate the local laterality for each node, considering both hemispheres.
+
+        Parameters:
+        X (numpy.ndarray): Connectivity matrix.
+        LH_idx (list): Indices of nodes in the left hemisphere.
+        RH_idx (list): Indices of nodes in the right hemisphere.
+        CH_idx (list): Indices of central nodes.
+        CH_bis_idx (list): Indices of additional central nodes.
+        hemisphere (str): Hemisphere for which to compute laterality ('left', 'right', or None).
+
+        Returns:
+        numpy.ndarray: Array of local laterality values for each node.
+        """
+    # RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
 
     # Extract sub matrices for left hemisphere, right hemisphere, and central channels
-    LH, _, _, RH, _, _, CH, _, _ = h_modules(X, RH_idx, LH_idx, CH_idx, CH_bis_idx)
+    LH, _, _, RH, _, _, CH, _, _ = h_modules(X, LH_idx, RH_idx, CH_idx, CH_bis_idx)
 
     if hemisphere == 'left':
         lat_homol = np.sum(LH, axis=1) / np.sum(CH, axis=1)
@@ -136,16 +156,23 @@ def local_laterality(X, ch_names, positions, hemisphere=None):
     return lat_homol
 
 
-def integration(X, ch_names, positions, hemisphere=None):
+def integration(X, LH_idx, RH_idx, CH_idx, CH_bis_idx, hemisphere=None):
     """
-    order LEFT-RIGHT. Calculate integration for each node, considering both hemispheres
-    X: connectivity matrix
-    ch_names: channel names
-    positions: channels positions in the same order as ch_names
-    :return:
-    """
-    RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
-    LL, LC, LR, RR, RC, RL, CC, CL, CR = h_modules(X, RH_idx, LH_idx, CH_idx, CH_bis_idx)
+        Calculate the integration for each node, considering both hemispheres.
+
+        Parameters:
+        X (numpy.ndarray): Connectivity matrix.
+        LH_idx (list): Indices of nodes in the left hemisphere.
+        RH_idx (list): Indices of nodes in the right hemisphere.
+        CH_idx (list): Indices of central nodes.
+        CH_bis_idx (list): Indices of additional central nodes.
+        hemisphere (str): Hemisphere for which to compute laterality ('left', 'right', or None).
+
+        Returns:
+        numpy.ndarray: Array of integration values for each node.
+        """
+    # RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
+    LL, LC, LR, RR, RC, RL, CC, CL, CR = h_modules(X, LH_idx, RH_idx, CH_idx, CH_bis_idx)
 
     if hemisphere == 'left':
         # Compute integration for the left hemisphere
@@ -169,16 +196,23 @@ def integration(X, ch_names, positions, hemisphere=None):
     return intg
 
 
-def segregation(X, ch_names, positions, hemisphere=None):
+def segregation(X, LH_idx, RH_idx, CH_idx, CH_bis_idx, hemisphere=None):
     """
-    order LEFT-RIGHT. Calculate segregation for each node, considering both hemispheres
-    X: connectivity matrix
-    ch_names: channel names
-    positions: channels positions in the same order as ch_names
-    :return:
-    """
-    RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
-    LL, LC, LR, RR, RC, RL, CC, CL, CR = h_modules(X, RH_idx, LH_idx, CH_idx, CH_bis_idx)
+        Calculate the segregation for each node, considering both hemispheres.
+
+        Parameters:
+        X (numpy.ndarray): Connectivity matrix.
+        LH_idx (list): Indices of nodes in the left hemisphere.
+        RH_idx (list): Indices of nodes in the right hemisphere.
+        CH_idx (list): Indices of central nodes.
+        CH_bis_idx (list): Indices of additional central nodes.
+        hemisphere (str): Hemisphere for which to compute laterality ('left', 'right', or None).
+
+        Returns:
+        numpy.ndarray: Array of segregation values for each node.
+        """
+    # RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names, positions)
+    LL, LC, LR, RR, RC, RL, CC, CL, CR = h_modules(X, LH_idx, RH_idx, CH_idx, CH_bis_idx)
 
     if hemisphere == 'left':
         # Compute segregation for the left hemisphere
