@@ -1,7 +1,6 @@
 ##############################################################################
-#%% MOABB plotting
+#%% Plot classification results
 # ----------------
-#
 # Here we plot the results using some of the convenience methods within the
 # toolkit.  The score_plot visualizes all the data with one score per subject
 # for every dataset and pipeline.
@@ -17,7 +16,7 @@ from moabb.datasets import (BNCI2014001,
                             Weibo2014,
                             Zhou2016)
 import matplotlib.pyplot as plt
-from plot_tools import score_plot
+from plottools.plot_scores import score_plot
 
 # Set paths
 path = os.getcwd()
