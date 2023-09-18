@@ -5,6 +5,7 @@ import sys
 # from networkx.exception import NetworkXNoPath
 import numpy as np
 import re
+import copy
 import mne
 from tools import bcolors
 
@@ -50,7 +51,8 @@ def channel_idx(ch_names, positions, print_ch=False):
 
     ch_miss = []
     # Find the homologous pair of channels and the closest central to the pair
-    for i in LH_idx:
+    LH_idx_ = copy.deepcopy(LH_idx)
+    for i in LH_idx_:
         ch_s = re.findall(r'\D+', ch_names[int(i)])  # string
         ch_n = re.findall(r'\d+', ch_names[int(i)])  # number
 
