@@ -15,8 +15,9 @@ from moabb.datasets import (BNCI2014001,
                             Schirrmeister2017,
                             Weibo2014,
                             Zhou2016)
+from moabb.analysis.meta_analysis import compute_dataset_statistics
 import matplotlib.pyplot as plt
-from plottools.plot_scores import score_plot
+from plottools.plot_scores import score_plot, meta_analysis_plot
 
 # Set paths
 path = os.getcwd()
@@ -51,6 +52,14 @@ for name, metric in net_metrics.items():
     select = results[results['pipeline'] == f"coh+{name}+SVM"]
     select_results = select_results.append(select, ignore_index=True)
 
-# Plot the results
+# Plot accuracies
 fig, ax = score_plot(select_results)
 plt.show()
+
+# Plot stats
+stats = compute_dataset_statistics(results)
+for algo, algo_name in zip(['RG+SVM', 'coh+intg+SVM', 'coh+lat+SVM', 'coh+s+SVM', 'coh+seg+SVM'],
+                           ['RG+SVM', 'intg+SVM', 'lat+SVM', 's+SVM', 'seg+SVM']):
+    fig, ax = meta_analysis_plot(stats, "CSP+PS+SVM", algo, "CSP+SVM", algo_name)
+    plt.show()
+# fig.savefig('test.png', transparent=True)
