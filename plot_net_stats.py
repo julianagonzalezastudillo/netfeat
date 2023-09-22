@@ -54,7 +54,7 @@ df_t_test = pd.read_csv("results/stats/net_t_test.csv")
 colors = [[0.0, '#4253D6'], [0.5, '#e1e8ed'], [1.0, '#EC6D5C']]
 cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
 for name, metric in network_metrics.items():
-    print(name)
+    print(metric)
     # Filter by selected metric and create dict of channels and t-values
     filtered_df = df_t_test[df_t_test['metric'] == metric]
     ch_t_val = filtered_df.groupby('node')['t_val'].apply(list).to_dict()
@@ -95,4 +95,12 @@ for name, metric in network_metrics.items():
     plt.show()
     fig_name = 'results/stats/t_test_{0}.png'.format(metric)
     fig.savefig(fig_name, transparent=True)
+
+    # Print min-max channels
+    idx_max = np.argmax(abs(ch_size))
+    idx_min = np.argmin(abs(ch_size))
+    print('max: {:.2f}, ch: {}'.format(ch_size[idx_max], ch_names_lh[idx_max]))
+    print('min: {:.2f}, ch: {}'.format(ch_size[idx_min], ch_names_lh[idx_min]))
+    # TODO: get max for dataset
+    # TODO: treshold for lateralization
 
