@@ -49,13 +49,16 @@ for i, key in enumerate(ch_keys):
 
 # Load stat data
 df_t_test = pd.read_csv("results/stats/net_t_test.csv")
-ch_t_val = df_t_test.groupby('node')['t_val'].apply(list).to_dict()
 
 # Define colors
 colors = [[0.0, '#4253D6'], [0.5, '#e1e8ed'], [1.0, '#EC6D5C']]
 cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
 for name, metric in network_metrics.items():
     print(name)
+    # Filter by selected metric and create dict of channels and t-values
+    filtered_df = df_t_test[df_t_test['metric'] == metric]
+    ch_t_val = filtered_df.groupby('node')['t_val'].apply(list).to_dict()
+
     if metric in lat_metrics:
         RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_keys, positions)
         LH_names = [ch_keys[index] for index in LH_idx]
