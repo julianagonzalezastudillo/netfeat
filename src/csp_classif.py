@@ -24,7 +24,7 @@ from moabb.datasets import (
 from moabb.paradigms import LeftRightImagery
 
 from netfeat_pipeline import WithinSessionEvaluation_netfeat
-from config import load_config
+from config import load_config, ConfigPath
 
 
 moabb.set_log_level("info")
@@ -65,5 +65,5 @@ for dt in datasets:
     )
     results = cross_val.process(pipeline)
     results.to_csv(
-        "./results/classification/{0}_rh_lh_csp.csv".format(dt.code), index=False
+        ConfigPath.RES_CLASSIFY_DIR / f"{dt.code}_rh_lh_csp.csv", index=False
     )
