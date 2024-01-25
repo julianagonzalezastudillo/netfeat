@@ -5,7 +5,6 @@
 Plot classification results. Here we plot the results using some of the convenience methods within the toolkit.
 The score_plot visualizes all the data with one score per subject for every dataset and pipeline.
 """
-import os
 import pandas as pd
 from moabb.datasets import (
     BNCI2014001,
