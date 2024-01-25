@@ -1,5 +1,9 @@
-import os
-import json
+"""
+=================================
+            NETFEAT
+=================================
+Plots adapted to plot accuracy results.
+"""
 import numpy as np
 from scipy.stats import t
 import pandas as pd
@@ -12,16 +16,13 @@ import moabb.analysis.plotting as moabb_plt
 from moabb.analysis.meta_analysis import (
     collapse_session_scores,
     combine_effects,
-    combine_pvalues
+    combine_pvalues,
 )
+from config import load_config
 
 
-path = os.getcwd()
-jsonfile = "params.json"
-jsonfullpath = os.path.join(path, jsonfile)
-with open(jsonfullpath) as jsonfile:
-    parameterDict = json.load(jsonfile)
-PALETTE = parameterDict['palette']
+params = load_config()
+PALETTE = params["palette"]
 
 
 def score_plot(data, pipelines=None):
@@ -49,15 +50,15 @@ def score_plot(data, pipelines=None):
     ax = fig.add_subplot(111)
 
     # marker
-    marker_path, attributes = svg2paths('plottools/bonhomme.svg')
-    my_marker = parse_path(attributes[0]['d'])
+    marker_path, attributes = svg2paths("plottools/bonhomme.svg")
+    my_marker = parse_path(attributes[0]["d"])
 
-    _, idx = np.unique(data['pipeline'], return_index=True)
-    pipe_list = data['pipeline'].iloc[np.sort(idx)].to_list()
+    _, idx = np.unique(data["pipeline"], return_index=True)
+    pipe_list = data["pipeline"].iloc[np.sort(idx)].to_list()
 
-    data['pipeline'] = pd.Categorical(data['pipeline'],
-                                      categories=pipe_list,
-                                      ordered=True)
+    data["pipeline"] = pd.Categorical(
+        data["pipeline"], categories=pipe_list, ordered=True
+    )
     colors = []
     for pipe in pipe_list:
         colors.append(PALETTE[pipe])
@@ -76,22 +77,36 @@ def score_plot(data, pipelines=None):
         s=22,
     )
     sns.stripplot(
-        y=data.groupby(['dataset', 'pipeline'], as_index=False)['score'].mean()['dataset'],
-        x=data.groupby(['dataset', 'pipeline'], as_index=False)['score'].mean()['score'],
+        y=data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
+            "dataset"
+        ],
+        x=data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
+            "score"
+        ],
         jitter=0.15,
         palette=colors,
-        hue=data.groupby(['dataset', 'pipeline'], as_index=False)['score'].mean()['pipeline'],
+        hue=data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
+            "pipeline"
+        ],
         dodge=True,
         ax=ax,
         marker=my_marker,
         s=35,
-        edgecolors='k',
+        edgecolors="k",
         linewidth=1,
     )
-    text_dt = data.groupby(['dataset', 'pipeline'], as_index=False)['score'].mean()['dataset']
-    text_pipe = data.groupby(['dataset', 'pipeline'], as_index=False)['score'].mean()['pipeline']
-    text_score = data.groupby(['dataset', 'pipeline'], as_index=False)['score'].mean()['score']
-    text_sd = data.groupby(['dataset', 'pipeline'], as_index=False)['score'].std()['score']
+    text_dt = data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
+        "dataset"
+    ]
+    text_pipe = data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
+        "pipeline"
+    ]
+    text_score = data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
+        "score"
+    ]
+    text_sd = data.groupby(["dataset", "pipeline"], as_index=False)["score"].std()[
+        "score"
+    ]
     # print(text_dt)
     # print(text_pipe)
     # print('mean')
@@ -108,8 +123,10 @@ def score_plot(data, pipelines=None):
     color_dict = {lb: h.get_facecolor()[0] for lb, h in zip(labels, handles)}
     # ax.legend(labels[0:int(len(labels)/2)])
     end = None
-    ax.legend(handles[len(np.unique(data.pipeline)):end],
-              labels[len(np.unique(data.pipeline)):end])
+    ax.legend(
+        handles[len(np.unique(data.pipeline)) : end],
+        labels[len(np.unique(data.pipeline)) : end],
+    )
     # ax.get_legend().remove()
     plt.tight_layout()
     return fig, ax
@@ -121,7 +138,10 @@ def _simplify_names(x):
     else:
         return x
 
-def meta_analysis_plot(stats_df, alg1, alg2, alg1_new_name, alg2_new_name):  # noqa: C901
+
+def meta_analysis_plot(
+    stats_df, alg1, alg2, alg1_new_name, alg2_new_name
+):  # noqa: C901
     """Meta-analysis to compare two algorithms across several datasets
 
     A meta-analysis style plot that shows the standardized effect with
@@ -255,10 +275,13 @@ def meta_analysis_plot(stats_df, alg1, alg2, alg1_new_name, alg2_new_name):  # n
     ax.axhline(0.5, linestyle="-", linewidth=3, c="k")
 
     title = "< {} better{}\n{}{} better >".format(
-        alg2_new_name, " " * (45 - len(alg2_new_name)), " " * (45 - len(alg1_new_name)), alg1_new_name
+        alg2_new_name,
+        " " * (45 - len(alg2_new_name)),
+        " " * (45 - len(alg1_new_name)),
+        alg1_new_name,
     )
     ax.set_title(title, ha="left", ma="right", loc="left")
     ax.set_xlabel("Standardized Mean Difference")
     fig.tight_layout()
 
-    return fig,ax
+    return fig, ax
