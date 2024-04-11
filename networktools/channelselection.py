@@ -120,45 +120,17 @@ class NetSelection(TransformerMixin, BaseEstimator):
         # Initialize StratifiedKFold
         skf = StratifiedKFold(5, shuffle=False, random_state=None)
 
-        t = 0
         best_features = []
         for train_cv_idx, val_cv_idx in skf.split(X_train, y_train):
-            # hand-made cross-val
-            t = t + 1
-            print(t)
+            # cross-val
             X_train_cv, X_val_cv = X_train[train_cv_idx], X_train[val_cv_idx]
             y_train_cv, y_val_cv = y_train[train_cv_idx], y_train[val_cv_idx]
 
             # Rank features
             sort_selection = self._rank_features(X_train_cv, y_train_cv)
-
-            score = 0
-            # candidate_mask = np.zeros(shape=np.shape(X_train)[1], dtype=bool)
-            features_mask = np.zeros(shape=np.shape(X_train)[1], dtype=bool)
-
-            # Select the top 10 features
-            clf = SVC(kernel="linear")
-            for feature, i in zip(
-                sort_selection, np.arange(0, 10)
-            ):  # or np.arange(len(sort_selection)) for all
-                # Include the feature/channel in the candidate set
-                candidate_mask = np.zeros(shape=np.shape(X_train)[1], dtype=bool)
-                candidate_mask[feature[2]] = True
-
-                # Update data with candidate features
-                X_train_cv_new = X_train_cv[:, candidate_mask]
-                X_val_cv_new = X_val_cv[:, candidate_mask]
-
-                # Train and validate a linear SVM classifier
-                clf.fit(X_train_cv_new, y_train_cv)
-                new_score = roc_auc_score(y_val_cv, clf.decision_function(X_val_cv_new))
-                print(feature[1], new_score)
-                # Compare with the previous best score and update the feature mask
-                if new_score > score:
-                    features_mask[i] = True
-                    score = new_score
-                else:
-                    candidate_mask[feature[2]] = False
+            features_mask = self._select_features(
+                sort_selection, X_train_cv, X_val_cv, y_train_cv, y_val_cv
+            )
 
             # Extend the list of best_features with selected features of this fold
             best_features.extend(list(compress(sort_selection, features_mask)))
@@ -211,6 +183,61 @@ class NetSelection(TransformerMixin, BaseEstimator):
             sort_selection[i][0] = t_val[sort_selection[i][2]]
 
         return sort_selection
+
+    def _select_features(
+        self, sort_selection, X_train_cv, X_val_cv, y_train_cv, y_val_cv
+    ):
+        """Select top features based on classification score.
+
+        Parameters
+        ----------
+        sort_selection : {array-like} of shape (n_features)
+            Sorted list of features based on some ranking metric.
+            Each feature contains [rank_value, channel_name, index, metric_name]
+
+        X_train_cv : {array-like} of shape (n_samples, n_channels)
+            Training data for cross-validation.
+
+        X_val_cv : {array-like} of shape (n_samples, n_channels)
+            Validation data for cross-validation.
+
+        y_train_cv : {array-like} of shape (n_samples,)
+            Target labels for training data.
+
+        y_val_cv : {array-like} of shape (n_samples,)
+            Target labels for validation data.
+
+        Returns
+        -------
+        features_mask : {array-like} of shape (n_features)
+            Boolean mask indicating selected features.
+        """
+        features_mask = np.zeros(shape=np.shape(X_train_cv)[1], dtype=bool)
+        candidate_mask = np.zeros(shape=np.shape(X_train_cv)[1], dtype=bool)
+        clf = SVC(kernel="linear")
+        score = 0  # Initialize score variable
+
+        # Include the feature/channel in the candidate set
+        for feature, i in zip(sort_selection, range(10)):
+            # candidate_mask = np.zeros(shape=np.shape(X_train_cv)[1], dtype=bool)
+            candidate_mask[feature[2]] = True
+
+            # Update data with candidate features
+            X_train_cv_new = X_train_cv[:, candidate_mask]
+            X_val_cv_new = X_val_cv[:, candidate_mask]
+
+            # Train and validate a linear SVM classifier
+            clf.fit(X_train_cv_new, y_train_cv)
+            new_score = roc_auc_score(y_val_cv, clf.decision_function(X_val_cv_new))
+
+            # Compare with the previous best score and update the feature mask
+            if new_score > score:
+                features_mask[i] = True
+                score = new_score
+            else:
+                candidate_mask[feature[2]] = False
+
+        return features_mask
 
     def _remove_duplicates(self, best_features):
         """Remove duplicate features.
