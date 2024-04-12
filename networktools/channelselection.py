@@ -15,6 +15,9 @@ from moabb_settings import save_global
 import networktools.net_topo as net_topo
 
 
+LATERALIZATION_METRIC = ["local_laterality", "segregation", "integration"]
+
+
 class NetSelection(TransformerMixin, BaseEstimator):
     def __init__(
         self,
@@ -31,6 +34,7 @@ class NetSelection(TransformerMixin, BaseEstimator):
         self.selection = None
         self.subelec_names = None
         self.t_val = None
+        self.rank = "t-test"
         self.dataset = dataset
         self.name = name
         self.session = session
@@ -138,26 +142,54 @@ class NetSelection(TransformerMixin, BaseEstimator):
         return self._remove_duplicates(best_features)
 
     def _rank_features(self, X, y):
-        # Separate data into two classes based on labels
-        class1 = X[y == np.unique(y)[0]]
-        class2 = X[y == np.unique(y)[1]]
+        """
+        Rank features based on their discriminative power.
 
-        t_val = []
-        # Calculate t-test values for each feature
-        for n in np.arange(0, np.size(class1, 1)):
-            n_t_val, _ = stats.ttest_ind(class1[:, n], class2[:, n], equal_var=False)
-            t_val.append(n_t_val)
+        Parameters:
+        -----------
+        X : array-like, shape (n_samples, n_features)
+            Input data.
+        y : array-like, shape (n_samples,)
+            Target labels.
 
+        Returns:
+        --------
+        sort_selection : list of tuples
+            Sorted list of features based on their discriminative power,
+            containing tuples of (t-test value, channel name, index, metric name).
+        """
+        if self.rank == "t-test":
+            # Separate data into two classes based on labels
+            class1 = X[y == np.unique(y)[0]]
+            class2 = X[y == np.unique(y)[1]]
+
+            # Calculate t-test values for each feature
+            rank_param = stats.ttest_ind(class1, class2, equal_var=False)[0]
+
+        elif self.rank == "score":
+            # Oder by individual classification performance
+            scores = []
+            for channel_idx in range(np.shape(X)[1]):
+                # Select data corresponding to the current channel
+                X_channel = X[:, channel_idx].reshape(-1, 1)
+
+                # Split, train and test
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X_channel, y, test_size=0.2, random_state=0, stratify=y
+                )
+                clf = SVC(kernel="linear")
+                clf.fit(X_train, y_train)
+                score = roc_auc_score(y_test, clf.decision_function(X_test))
+                scores.append(score)
+            rank_param = scores
+
+        # Generate lists of channel names and metric names based on self.metric
         ch_list = []
         metric_list = []
         for metric in self.metric:
             # Check if it's a lateralization metric
-            net_metric_lateralization = [
-                "local_laterality",
-                "segregation",
-                "integration",
-            ]
-            if metric in net_metric_lateralization:
+            if metric in LATERALIZATION_METRIC:
+                # Selection get reduce to half of the channels because of redundancy
                 ch_pos = net_topo.positions_matrix(self.montage_name, self.ch_names)
                 rh_idx, lh_idx, _, _ = net_topo.channel_idx(self.ch_names, ch_pos)
                 ch_list += list(np.array(self.ch_names)[lh_idx])
@@ -168,19 +200,10 @@ class NetSelection(TransformerMixin, BaseEstimator):
 
         # Create a list of tuples with t-test values, channel names, indices, and metric names
         sort_selection = sorted(
-            zip(
-                abs(np.array(t_val)),
-                np.array(ch_list),
-                np.arange(len(t_val)),
-                np.array(metric_list),
-            ),
+            zip(rank_param, ch_list, range(len(rank_param)), metric_list),
+            key=lambda x: abs(x[0]),  # Sort by absolute value of the rank_param
             reverse=True,
         )
-
-        # Get back t-test sign in the sorted list
-        for i in np.arange(len(sort_selection)):
-            sort_selection[i] = list(sort_selection[i])
-            sort_selection[i][0] = t_val[sort_selection[i][2]]
 
         return sort_selection
 
@@ -191,9 +214,9 @@ class NetSelection(TransformerMixin, BaseEstimator):
 
         Parameters
         ----------
-        sort_selection : {array-like} of shape (n_features)
-            Sorted list of features based on some ranking metric.
-            Each feature contains [rank_value, channel_name, index, metric_name]
+        sort_selection : list of tuples
+            Sorted list of features based on their discriminative power,
+            containing tuples of (t-test value, channel name, index, metric name)
 
         X_train_cv : {array-like} of shape (n_samples, n_channels)
             Training data for cross-validation.
@@ -244,10 +267,9 @@ class NetSelection(TransformerMixin, BaseEstimator):
 
         Parameters
         ----------
-        best_features : {array-like} of shape (n_features)
-                        The list of selected features.
-                        Each feature contains [rank_value, channel_name, index, metric_name]
-
+        best_features : list of tuples
+            Sorted list of features based on their discriminative power,
+            containing tuples of (t-test value, channel name, index, metric name)
         Returns
         -------
         unique_features : {array-like} of shape (n_features)
