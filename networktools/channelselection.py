@@ -10,15 +10,56 @@ from sklearn.model_selection import (
 )
 from itertools import compress
 from scipy import stats
-from sklearn.metrics import accuracy_score
 from moabb_settings import save_global
 import networktools.net_topo as net_topo
+from config import N_FEATURES
 
 
 LATERALIZATION_METRIC = ["local_laterality", "segregation", "integration"]
 
 
 class NetSelection(TransformerMixin, BaseEstimator):
+    """Feature selection for network properties.
+
+    We implemented an embedded approach to select the best discriminant features. We use a sequential forward feature
+    selection. Within a nested cross-validation framework, this algorithm adds features to form a feature subset. To
+    limit the research complexity, at each stage we rank our features from the training folds according to their
+    discrimination power (t-test or classification score). Then we perform a bottom up search procedure which
+    conditionally includes new features to the selected set based on the cross-validation score.
+
+    Within a cross-validation framework, this approach uses a nested 5-fold cross-validated SVM on a sub-training set
+    (80% of the original cv training) [1], to obtain a subset of selected features, N′ = 10. For each nested cv
+    iteration, features are ranked according to their discriminant power between classes. In a forward sequential order,
+    a feature is going to be retained and accumulated in the selected set, if its accuracy is higher than the previous
+    set. The output of this nested cv is a group of 10 selected features on which the original cv validation set is
+    going to be tested. This is repeated for each iteration in the original CV.
+
+    Parameters
+        ----------
+        dataset : List of Dataset instance
+        name : str or None, default=None
+            Name of the model.
+        session : int or None, default=None
+            Session number.
+        sessions_name : list or None, default=None
+            Session name.
+        metric : str or None, default=None
+            Nework metric name.
+        ch_names : list or None, default=None
+            List of channel names.
+        montage_name : str or None, default=None
+            Montage name.
+        pipeline : str or None, default=None
+            Pipeline name.
+        cv_splits : int or None, default=None
+            Number of cross-validation splits.
+    References
+    ----------
+
+    [1] Dominguez, L. G. (2009). “On the risk of extracting relevant information from random data”.
+    In: Journal of neural engineering 6.5, p. 058001.
+    """
+
     def __init__(
         self,
         dataset=None,
@@ -207,9 +248,8 @@ class NetSelection(TransformerMixin, BaseEstimator):
 
         return sort_selection
 
-    def _select_features(
-        self, sort_selection, X_train_cv, X_val_cv, y_train_cv, y_val_cv
-    ):
+    @staticmethod
+    def _select_features(sort_selection, X_train_cv, X_val_cv, y_train_cv, y_val_cv):
         """Select top features based on classification score.
 
         Parameters
@@ -241,7 +281,7 @@ class NetSelection(TransformerMixin, BaseEstimator):
         score = 0  # Initialize score variable
 
         # Include the feature/channel in the candidate set
-        for feature, i in zip(sort_selection, range(10)):
+        for feature, i in zip(sort_selection, range(N_FEATURES)):
             # candidate_mask = np.zeros(shape=np.shape(X_train_cv)[1], dtype=bool)
             candidate_mask[feature[2]] = True
 
@@ -262,7 +302,8 @@ class NetSelection(TransformerMixin, BaseEstimator):
 
         return features_mask
 
-    def _remove_duplicates(self, best_features):
+    @staticmethod
+    def _remove_duplicates(best_features):
         """Remove duplicate features.
 
         Parameters
@@ -278,44 +319,44 @@ class NetSelection(TransformerMixin, BaseEstimator):
         indexes = np.unique([row[2] for row in best_features], return_index=True)
         return [best_features[i] for i in indexes[1]]
 
-    def _net_train_test(self, X, y):
-        """
-        Perform feature selection using forward selection.
-
-        Parameters:
-        X (array-like): Input data.
-        y (array-like): Target labels.
-
-        Returns:
-        selected_features (list): List of selected features.
-        """
-        # Split the data into training and testing sets
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        # Forward selection using scikit-learn and MNE-Python with SVM
-        selected_features = []
-        remaining_features = list(range(X_train.shape[1]))
-        while remaining_features:
-            best_feature = None
-            best_score = -1
-            for feature in remaining_features:
-                candidate_features = selected_features + [feature]
-                X_train_selected = X_train[:, candidate_features]
-                # Create a SVM classifier and fit it on the selected features
-                classifier = SVC(kernel="linear")
-                classifier.fit(X_train_selected, y_train)
-                # Evaluate the classifier on the testing set
-                X_test_selected = X_test[:, candidate_features]
-                y_pred = classifier.predict(X_test_selected)
-                score = accuracy_score(y_test, y_pred)
-                if score > best_score:
-                    best_score = score
-                    best_feature = feature
-            if best_feature is not None:
-                selected_features.append(best_feature)
-                remaining_features.remove(best_feature)
-            else:
-                break
-
-        return selected_features
+    # def _net_train_test(self, X, y):
+    #     """
+    #     Perform feature selection using forward selection.
+    #
+    #     Parameters:
+    #     X (array-like): Input data.
+    #     y (array-like): Target labels.
+    #
+    #     Returns:
+    #     selected_features (list): List of selected features.
+    #     """
+    #     # Split the data into training and testing sets
+    #     X_train, X_test, y_train, y_test = train_test_split(
+    #         X, y, test_size=0.2, random_state=42
+    #     )
+    #     # Forward selection using scikit-learn and MNE-Python with SVM
+    #     selected_features = []
+    #     remaining_features = list(range(X_train.shape[1]))
+    #     while remaining_features:
+    #         best_feature = None
+    #         best_score = -1
+    #         for feature in remaining_features:
+    #             candidate_features = selected_features + [feature]
+    #             X_train_selected = X_train[:, candidate_features]
+    #             # Create a SVM classifier and fit it on the selected features
+    #             classifier = SVC(kernel="linear")
+    #             classifier.fit(X_train_selected, y_train)
+    #             # Evaluate the classifier on the testing set
+    #             X_test_selected = X_test[:, candidate_features]
+    #             y_pred = classifier.predict(X_test_selected)
+    #             score = accuracy_score(y_test, y_pred)
+    #             if score > best_score:
+    #                 best_score = score
+    #                 best_feature = feature
+    #         if best_feature is not None:
+    #             selected_features.append(best_feature)
+    #             remaining_features.remove(best_feature)
+    #         else:
+    #             break
+    #
+    #     return selected_features
