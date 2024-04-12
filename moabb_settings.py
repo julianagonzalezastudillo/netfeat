@@ -1,8 +1,6 @@
 """ This file contains auxiliary functions """
 
-from pathlib import Path
 import gzip
-import os
 import pandas as pd
 import pickle
 import save_features
@@ -60,16 +58,12 @@ def create_info_file(dataset, subject, paradigm):
     """
     Create info file with subject information in order to fasten when loading information.
     """
-    info_path = Path(os.path.join(os.getcwd(), "results", "info"))
-    if not os.path.exists(info_path):
-        os.makedirs(info_path)
+    info_path = ConfigPath.RES_DIR / "info"
+    info_path.mkdir(parents=True, exist_ok=True)
 
-    info_file = Path(
-        os.path.join(
-            info_path, "info_{0}_sub{1}.gz".format(dataset.code, str(subject).zfill(3))
-        )
-    )
-    if os.path.exists(info_file):
+    info_file = info_path / f"info_{dataset.code}_sub{str(subject).zfill(3)}.gz"
+
+    if info_file.exists():
         with gzip.open(info_file, "r") as f:
             info = pickle.load(f)
     else:
