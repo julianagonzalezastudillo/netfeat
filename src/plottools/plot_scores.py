@@ -18,10 +18,10 @@ from moabb.analysis.meta_analysis import (
     combine_effects,
     combine_pvalues,
 )
-from config import load_config
+from src.config import load_config
 
 
-params = load_config()
+params, paradigm = load_config()
 PALETTE = params["palette"]
 
 
