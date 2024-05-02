@@ -10,12 +10,9 @@ from sklearn.model_selection import (
 )
 from itertools import compress
 from scipy import stats
-from moabb_settings import save_global
-import networktools.net_topo as net_topo
-from config import N_FEATURES
-
-
-LATERALIZATION_METRIC = ["local_laterality", "segregation", "integration"]
+from ..moabb_settings import save_global
+import net_topo as net_topo
+from ..config import N_FEATURES, LATERALIZATION_METRIC
 
 
 class NetSelection(TransformerMixin, BaseEstimator):
@@ -75,7 +72,7 @@ class NetSelection(TransformerMixin, BaseEstimator):
         self.selection = None
         self.subelec_names = None
         self.t_val = None
-        self.rank = "t-test"
+        self.rank = "score"  # "t-test" or "score"
         self.dataset = dataset
         self.name = name
         self.session = session
@@ -147,7 +144,7 @@ class NetSelection(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : {array-like} of shape (n_trials, n_channels)
-            The
+            Input data.
 
         y : {array-like}, shape (n_samples,)
             The target values.
@@ -318,45 +315,3 @@ class NetSelection(TransformerMixin, BaseEstimator):
         """
         indexes = np.unique([row[2] for row in best_features], return_index=True)
         return [best_features[i] for i in indexes[1]]
-
-    # def _net_train_test(self, X, y):
-    #     """
-    #     Perform feature selection using forward selection.
-    #
-    #     Parameters:
-    #     X (array-like): Input data.
-    #     y (array-like): Target labels.
-    #
-    #     Returns:
-    #     selected_features (list): List of selected features.
-    #     """
-    #     # Split the data into training and testing sets
-    #     X_train, X_test, y_train, y_test = train_test_split(
-    #         X, y, test_size=0.2, random_state=42
-    #     )
-    #     # Forward selection using scikit-learn and MNE-Python with SVM
-    #     selected_features = []
-    #     remaining_features = list(range(X_train.shape[1]))
-    #     while remaining_features:
-    #         best_feature = None
-    #         best_score = -1
-    #         for feature in remaining_features:
-    #             candidate_features = selected_features + [feature]
-    #             X_train_selected = X_train[:, candidate_features]
-    #             # Create a SVM classifier and fit it on the selected features
-    #             classifier = SVC(kernel="linear")
-    #             classifier.fit(X_train_selected, y_train)
-    #             # Evaluate the classifier on the testing set
-    #             X_test_selected = X_test[:, candidate_features]
-    #             y_pred = classifier.predict(X_test_selected)
-    #             score = accuracy_score(y_test, y_pred)
-    #             if score > best_score:
-    #                 best_score = score
-    #                 best_feature = feature
-    #         if best_feature is not None:
-    #             selected_features.append(best_feature)
-    #             remaining_features.remove(best_feature)
-    #         else:
-    #             break
-    #
-    #     return selected_features

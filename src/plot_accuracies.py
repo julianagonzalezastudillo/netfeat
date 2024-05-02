@@ -20,11 +20,12 @@ from moabb.datasets import (
 from moabb.analysis.meta_analysis import compute_dataset_statistics
 import matplotlib.pyplot as plt
 from plottools.plot_scores import score_plot, meta_analysis_plot
-from config import ConfigPath, Info
+from config import ConfigPath, load_config
 
 
 # Define constants
 PIPELINES = ["net", "csp", "riemannian"]
+params, paradigm = load_config()
 
 # Load datasets
 datasets = [
@@ -51,7 +52,7 @@ for dt in datasets:
 select_pipelines = ["RG+SVM", "CSP+PS+SVM"]
 select_results = results[results["pipeline"].isin(select_pipelines)]
 
-for name, metric in Info.NET_METRICS.items():
+for name, metric in params["net_metrics"].items():
     select = results[results["pipeline"] == f"coh+{name}+SVM"]
     select_results = pd.concat([select_results, select], ignore_index=True)
 
