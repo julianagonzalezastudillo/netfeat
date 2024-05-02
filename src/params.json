@@ -1,6 +1,13 @@
 {
   "fmin": 8,
   "fmax": 35,
+  "fc": "coh",
+  "net_metrics": {
+        "s": "strength",
+        "lat": "local_laterality",
+        "seg": "segregation",
+        "intg": "integration"
+    },
   "csp_component_order": "alternate",
   "csp_n_components": 8,
   "cv": 5,
