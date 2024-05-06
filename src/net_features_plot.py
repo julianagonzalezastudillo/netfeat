@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
+import matplotlib.colors
 import numpy as np
 import pandas as pd
-import matplotlib.colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from networktools.net_topo import channel_idx, positions_matrix
-from plottools.plot_positions import channel_pos_2d
+from plottools.plot_positions import channel_pos
 from config import load_config, ConfigPath, LATERALIZATION_METRIC
+from tools import save_mat_file
 
 
 def colorbar(ax, scatter):
@@ -63,11 +64,12 @@ def channel_size(df, effect_size=False):
     return ch_size_
 
 
+# Load parameters
 params, paradigm = load_config()
 
 # Get electrodes positions
 ch_keys = np.unique(sum(params["ch_names"].values(), []))
-positions = channel_pos_2d(ch_keys)
+positions = channel_pos(ch_keys, dimension="2d")
 pos = {key: pos for key, pos in zip(ch_keys, positions)}
 
 # Load stat data
@@ -147,8 +149,16 @@ for name, metric in params["net_metrics"].items():
     # plt.title('{0}'.format(metric))
     colorbar(ax, thplot)
     plt.show()
-    fig_name = "results/stats/t_test_{0}.png".format(metric)
+    fig_name = ConfigPath.RES_DIR / "stats/t_test_{0}.png".format(metric)
     # fig.savefig(fig_name, transparent=True)
+
+    # get 3D layout and save
+    xyz = channel_pos(ch_names_lh, dimension="3d") * 900
+    norm = plt.Normalize(vmin=-max(abs(ch_size)), vmax=max(abs(ch_size)))
+    rgb_values = cmap(norm(ch_size))
+    save_mat_file(
+        ch_size, xyz, rgb_values, ch_names_lh, metric, ConfigPath.RES_DIR / "stats"
+    )
 
     # Print min-max channels
     idx_max = np.argmax(abs(ch_size))
