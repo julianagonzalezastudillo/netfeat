@@ -27,7 +27,7 @@ def suppress_stdout():
             sys.stdout = old_stdout
 
 
-def save_mat_file(ch_size, xyz, rgb, ch_name, metric, plot_path):
+def save_mat_file(ch_size, xyz, rgb, ch_name, file_name):
     """Save .mat to do 3D brain plots.
 
     Parameters
@@ -44,11 +44,8 @@ def save_mat_file(ch_size, xyz, rgb, ch_name, metric, plot_path):
     ch_name : {array-like} of shape (n_channels)
         Vector with nodes names.
 
-    metric : string
-        Metric name use to save .mat file.
-
-    plot_path : string
-        Path to save .mat file.
+    file_name : string
+        Name use to save .mat file.
 
     Returns
     -------
@@ -63,5 +60,4 @@ def save_mat_file(ch_size, xyz, rgb, ch_name, metric, plot_path):
         "names_idx": np.arange(np.size(ch_name)),
     }
 
-    sio.savemat(plot_path / f"{metric}.mat", values)
-    print(plot_path / f"{metric}.mat")
+    sio.savemat(f"{file_name}.mat", values)

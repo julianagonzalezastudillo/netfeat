@@ -26,7 +26,7 @@ def colorbar(ax, scatter):
     plt.delaxes(cax)
 
 
-def channel_size(df, effect_size=False):
+def channel_size(df, channel_names, effect_size=False):
     """Calculate the channel size for meta-analysis statistics
 
     Parameters
@@ -36,6 +36,9 @@ def channel_size(df, effect_size=False):
 
     effect_size : bool, optional
         If True, computes the effect size using weights defined based on number of subjects, by default False.
+
+    channel_names : {array-like} of shape (n_channels)
+        Vector with nodes to be selected.
 
     Returns
     -------
@@ -54,14 +57,14 @@ def channel_size(df, effect_size=False):
             )
         ch_t_val = df.groupby("node")["t_val"].apply(list).to_dict()
         ch_size_ = [
-            np.mean(ch_t_val[ch]) for ch in ch_names_lh
+            np.mean(ch_t_val[ch]) for ch in channel_names
         ]  # this is the sum including size effect
     else:
         # Compute mean across t-values for each channel
         ch_t_val = df.groupby("node")["t_val"].apply(list).to_dict()
-        ch_size_ = [np.mean(ch_t_val[ch]) for ch in ch_names_lh]
+        ch_size_ = [np.mean(ch_t_val[ch]) for ch in channel_names]
 
-    return ch_size_
+    return np.array(ch_size_)
 
 
 # Load parameters
@@ -100,70 +103,82 @@ for name, metric in params["net_metrics"].items():
     # Filter by selected metric and create dict of channels and t-values
     df_metric = df_t_test[df_t_test["metric"] == metric]
 
-    if metric in LATERALIZATION_METRIC:
-        RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_keys, positions)
-        LH_names = [ch_keys[index] for index in LH_idx]
-        ch_names_lh = LH_names
-        fig, ax = plt.subplots(figsize=(4, 5), dpi=300)
-    else:
-        ch_names_lh = np.unique(sum(params["ch_names"].values(), []))
-        fig, ax = plt.subplots(figsize=(7, 5), dpi=300)
+    # for each dataset or all datasets together
+    for dts in np.append(df_metric.dataset.unique(), "all"):
+        print(dts)
+        if dts == "all":
+            df_metric_dt = df_metric.loc[:]
+            ch_names_dts = ch_keys
+        else:
+            df_metric_dt = df_metric.loc[df_metric["dataset"] == dts]
+            ch_names_dts = params["ch_names"][dts]
 
-    ch_size = channel_size(df_metric, effect_size=False)
-    cte_size = 0.01
+        if metric in LATERALIZATION_METRIC:
+            pos_dts = {key: value for key, value in pos.items() if key in ch_names_dts}
+            pos_dts = np.array([value for value in pos_dts.values()]).reshape(-1, 2)
+            RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names_dts, pos_dts)
+            ch_names = [ch_names_dts[index] for index in LH_idx]
+            fig, ax = plt.subplots(figsize=(4, 5), dpi=300)
+        else:
+            ch_names = df_metric_dt.node.unique()
+            fig, ax = plt.subplots(figsize=(7, 5), dpi=300)
 
-    # Define node max size
-    factor = cte_size * fig.dpi * fig.get_size_inches()[0]
+        # Assign position to each node
+        ch_pos = np.array([pos[ch] for ch in ch_names])
 
-    ch_pos = np.array([pos[ch] for ch in ch_names_lh])
-    ch_size = np.array(ch_size)
+        # Define node size and max
+        ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
+        factor = 0.01 * fig.dpi * fig.get_size_inches()[0]
 
-    # Plot t-values
-    divnorm = matplotlib.colors.TwoSlopeNorm(
-        vmin=-max(abs(ch_size)), vcenter=0.0, vmax=max(abs(ch_size))
-    )
-    thplot = ax.scatter(
-        ch_pos[:, 0],
-        ch_pos[:, 1],
-        s=(abs(ch_size) * factor) ** 2,
-        c=ch_size,
-        marker=".",
-        cmap=cmap,
-        norm=divnorm,
-        alpha=0.9,
-        linewidths=0,
-    )
-    for i, ch in enumerate(ch_names_lh):
-        ax.text(
-            ch_pos[i, 0],
-            ch_pos[i, 1],
-            ch,
-            fontname="Arial",
-            fontsize=6,
-            horizontalalignment="center",
-            verticalalignment="center",
+        # Plot t-values
+        divnorm = matplotlib.colors.TwoSlopeNorm(
+            vmin=-max(abs(ch_size)), vcenter=0.0, vmax=max(abs(ch_size))
+        )
+        thplot = ax.scatter(
+            ch_pos[:, 0],
+            ch_pos[:, 1],
+            s=(abs(ch_size) * factor) ** 2,
+            c=ch_size,
+            marker=".",
+            cmap=cmap,
+            norm=divnorm,
+            alpha=0.9,
+            linewidths=0,
+        )
+        for i, ch in enumerate(ch_names):
+            ax.text(
+                ch_pos[i, 0],
+                ch_pos[i, 1],
+                ch,
+                fontname="Arial",
+                fontsize=6,
+                horizontalalignment="center",
+                verticalalignment="center",
+            )
+
+        ax.set_aspect("equal", adjustable="box")
+        ax.axis("off")
+        plt.title(f"{dts} {metric}")
+        colorbar(ax, thplot)
+        # plt.show()
+        fig_name = ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}.png"
+        fig.savefig(fig_name, transparent=True)
+
+        # get 3D layout and save
+        xyz = channel_pos(ch_names, dimension="3d") * 900
+        norm = plt.Normalize(vmin=-max(abs(ch_size)), vmax=max(abs(ch_size)))
+        rgb_values = cmap(norm(ch_size))
+        save_mat_file(
+            ch_size,
+            xyz,
+            rgb_values,
+            ch_names,
+            ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}",
         )
 
-    ax.set_aspect("equal", adjustable="box")
-    ax.axis("off")
-    # plt.title('{0}'.format(metric))
-    colorbar(ax, thplot)
-    plt.show()
-    fig_name = ConfigPath.RES_DIR / "stats/t_test_{0}.png".format(metric)
-    # fig.savefig(fig_name, transparent=True)
-
-    # get 3D layout and save
-    xyz = channel_pos(ch_names_lh, dimension="3d") * 900
-    norm = plt.Normalize(vmin=-max(abs(ch_size)), vmax=max(abs(ch_size)))
-    rgb_values = cmap(norm(ch_size))
-    save_mat_file(
-        ch_size, xyz, rgb_values, ch_names_lh, metric, ConfigPath.RES_DIR / "stats"
-    )
-
-    # Print min-max channels
-    idx_max = np.argmax(abs(ch_size))
-    idx_min = np.argmin(abs(ch_size))
-    print("max: {:.2f}, ch: {}".format(ch_size[idx_max], ch_names_lh[idx_max]))
-    print("min: {:.2f}, ch: {}".format(ch_size[idx_min], ch_names_lh[idx_min]))
-    # TODO: get max for dataset
-    # TODO: treshold for lateralization
+        # Print min-max channels
+        idx_max = np.argmax(abs(ch_size))
+        idx_min = np.argmin(abs(ch_size))
+        print("max: {:.2f}, ch: {}".format(ch_size[idx_max], ch_names[idx_max]))
+        print("min: {:.2f}, ch: {}".format(ch_size[idx_min], ch_names[idx_min]))
+        # TODO: treshold for lateralization
