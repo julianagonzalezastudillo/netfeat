@@ -1,7 +1,5 @@
 from contextlib import contextmanager
 import sys, os
-import scipy.io as sio
-import numpy as np
 
 
 class bcolors:
@@ -25,39 +23,3 @@ def suppress_stdout():
             yield
         finally:
             sys.stdout = old_stdout
-
-
-def save_mat_file(ch_size, xyz, rgb, ch_name, file_name):
-    """Save .mat to do 3D brain plots.
-
-    Parameters
-    ----------
-    ch_size : {array-like} of shape (n_channels)
-        Vector with nodes values.
-
-    xyz : {array-like} of shape (n_channels)
-        3D nodes positions.
-
-    rgb : {array-like} of shape (n_channels, 4)
-        4D matrix with nodes colors.
-
-    ch_name : {array-like} of shape (n_channels)
-        Vector with nodes names.
-
-    file_name : string
-        Name use to save .mat file.
-
-    Returns
-    -------
-    save .mat
-    """
-
-    values = {
-        "Xnet": ch_size,
-        "xyz": xyz,
-        "color": rgb,
-        "names": ch_name[np.nonzero(ch_name)],
-        "names_idx": np.nonzero(ch_name),
-    }
-
-    sio.savemat(f"{file_name}.mat", values)

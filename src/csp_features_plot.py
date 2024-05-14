@@ -7,6 +7,7 @@ import numpy as np
 
 from moabb.paradigms import LeftRightImagery
 from plottools.plot_positions import channel_pos
+from plottools.plot_tools import colorbar
 
 from config import load_config, ConfigPath, DATASETS
 
@@ -104,11 +105,7 @@ for csp_f_p in ["filters", "patterns"]:
         plt.title("{0} {1}".format(csp_f_p, class_name))
 
         # Colorbar
-        cb_ax = fig.add_axes([0.92, 0.124, 0.03, 0.7])
-        cbar = fig.colorbar(im, orientation="vertical", cax=cb_ax)
-        cbar.outline.set_linewidth(0.2)
-        cbar.outline.set_edgecolor("grey")
-        cbar.ax.tick_params(labelsize=7, size=0)
+        colorbar(fig, im)
 
         plt.show()
         fig_name = (

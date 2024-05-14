@@ -2,43 +2,11 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 import numpy as np
 import pandas as pd
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 from networktools.net_topo import channel_idx, positions_matrix
 from plottools.plot_positions import channel_pos
+from plottools.plot_tools import colorbar, save_mat_file
 from config import load_config, ConfigPath, LATERALIZATION_METRIC
-from tools import save_mat_file
-
-
-def colorbar(ax, scatter):
-    """Add a colorbar to a plot.
-
-    Parameters
-    ----------
-        ax : matplotlib.axes.Axes
-        The main axes object to which the colorbar will be attached.
-
-        scatter : matplotlib.pyplot.scatter
-        The scatter plot object for which the colorbar is being added.
-
-    Returns
-    -------
-        matplotlib.colorbar.Colorbar:
-        The colorbar object that was added to the plot.
-    """
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="3%", pad=0.02)
-    cax_new = fig.add_axes(
-        [
-            cax.get_position().x1 + 0.01,
-            cax.get_position().y0 + 0.035,
-            0.02,
-            cax.get_position().height - 0.07,
-        ]
-    )
-    cbar = plt.colorbar(scatter, cax=cax_new, shrink=0.7)
-    cbar.outline.set_visible(False)
-    cbar.ax.tick_params(labelsize=7, size=0)
-    plt.delaxes(cax)
 
 
 def channel_size(df, channel_names, effect_size=False):
@@ -187,7 +155,7 @@ for name, metric in params["net_metrics"].items():
         ax.set_xlim(min(positions[:, 0]), xlim_max)
         ax.set_ylim(min(positions[:, 1]) * 1.1, max(positions[:, 1]) * 1.1)
         # plt.title(f"{dts} {metric}")
-        colorbar(ax, thplot)
+        colorbar(fig, thplot)
         plt.show()
         fig_name = ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}.png"
         fig.savefig(fig_name, transparent=True)
