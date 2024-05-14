@@ -56,8 +56,8 @@ def save_mat_file(ch_size, xyz, rgb, ch_name, file_name):
         "Xnet": ch_size,
         "xyz": xyz,
         "color": rgb,
-        "names": np.array(ch_name),
-        "names_idx": np.arange(np.size(ch_name)),
+        "names": ch_name[np.nonzero(ch_name)],
+        "names_idx": np.nonzero(ch_name),
     }
 
     sio.savemat(f"{file_name}.mat", values)
