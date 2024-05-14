@@ -10,6 +10,7 @@
     },
   "csp_component_order": "alternate",
   "csp_n_components": 8,
+  "nelec": 10,
   "cv": 5,
   "ch_names": {
         "001-2014": ["FC3", "FC1", "C5", "C3", "C1", "CP3", "CP1", "P1", "Fz", "FCz", "Cz", "CPz", "Pz", "POz", "FC4",
