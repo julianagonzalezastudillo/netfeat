@@ -11,33 +11,12 @@ import pandas as pd
 import pickle
 from scipy import stats
 
-from config import load_config, ConfigPath, LATERALIZATION_METRIC
+from config import load_config, ConfigPath, DATASETS, LATERALIZATION_METRIC
 from moabb_settings import create_info_file
 import networktools.net_topo as net_topo
-from moabb.datasets import (
-    BNCI2014001,
-    Cho2017,
-    Lee2019_MI,
-    MunichMI,
-    PhysionetMI,
-    Shin2017A,
-    Schirrmeister2017,
-    Weibo2014,
-    Zhou2016,
-)
 
 
 params, paradigm = load_config()
-datasets = [
-    BNCI2014001(),
-    Cho2017(),
-    Lee2019_MI(),
-    PhysionetMI(),
-    Shin2017A(accept=True),
-    Schirrmeister2017(),
-    Weibo2014(),
-    Zhou2016(),
-]
 
 # Initialize data containers
 df_list = []
@@ -47,7 +26,7 @@ for name, metric in params["net_metrics"].items():
     ch_dict_t_val = dict(zip(ch_keys, ch_values))
     ch_dict_p_val = dict(zip(ch_keys, ch_values))
 
-    for dataset in datasets:
+    for dataset in DATASETS:
         for subject in dataset.subject_list:
             # Initialize per-subject data containers
             df_sub_list = []
