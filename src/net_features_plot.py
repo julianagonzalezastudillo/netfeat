@@ -10,6 +10,21 @@ from tools import save_mat_file
 
 
 def colorbar(ax, scatter):
+    """Add a colorbar to a plot.
+
+    Parameters
+    ----------
+        ax : matplotlib.axes.Axes
+        The main axes object to which the colorbar will be attached.
+
+        scatter : matplotlib.pyplot.scatter
+        The scatter plot object for which the colorbar is being added.
+
+    Returns
+    -------
+        matplotlib.colorbar.Colorbar:
+        The colorbar object that was added to the plot.
+    """
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="3%", pad=0.02)
     cax_new = fig.add_axes(
@@ -173,7 +188,7 @@ for name, metric in params["net_metrics"].items():
         ax.set_ylim(min(positions[:, 1]) * 1.1, max(positions[:, 1]) * 1.1)
         # plt.title(f"{dts} {metric}")
         colorbar(ax, thplot)
-        # plt.show()
+        plt.show()
         fig_name = ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}.png"
         fig.savefig(fig_name, transparent=True)
 
