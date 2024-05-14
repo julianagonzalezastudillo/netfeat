@@ -117,14 +117,25 @@ for name, metric in params["net_metrics"].items():
             pos_dts = {key: value for key, value in pos.items() if key in ch_names_dts}
             pos_dts = np.array([value for value in pos_dts.values()]).reshape(-1, 2)
             RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names_dts, pos_dts)
-            ch_names = [ch_names_dts[index] for index in LH_idx]
+            ch_names = np.array([ch_names_dts[index] for index in LH_idx])
             fig, ax = plt.subplots(figsize=(4, 5), dpi=300)
+            xlim_max = 0
         else:
             ch_names = df_metric_dt.node.unique()
             fig, ax = plt.subplots(figsize=(7, 5), dpi=300)
+            xlim_max = max(positions[:, 0])
+        ch_names = ch_names[~np.isin(ch_names, ["F9", "F10", "M1", "M2"])]
 
         # Assign position to each node
+        ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
         ch_pos = np.array([pos[ch] for ch in ch_names])
+
+        # Threshold for node names
+        thresh = (
+            2
+            if metric in LATERALIZATION_METRIC
+            else abs(ch_size[np.argsort(abs(ch_size))[-10:]][0])
+        )
 
         # Define node size and max
         ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
@@ -158,21 +169,28 @@ for name, metric in params["net_metrics"].items():
 
         ax.set_aspect("equal", adjustable="box")
         ax.axis("off")
-        plt.title(f"{dts} {metric}")
+        ax.set_xlim(min(positions[:, 0]), xlim_max)
+        ax.set_ylim(min(positions[:, 1]) * 1.1, max(positions[:, 1]) * 1.1)
+        # plt.title(f"{dts} {metric}")
         colorbar(ax, thplot)
         # plt.show()
         fig_name = ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}.png"
         fig.savefig(fig_name, transparent=True)
 
-        # get 3D layout and save
-        xyz = channel_pos(ch_names, dimension="3d") * 900
+        # Get 3D layout and save
+        xyz = channel_pos(ch_names, dimension="3d", montage_type="standard") * 900
         norm = plt.Normalize(vmin=-max(abs(ch_size)), vmax=max(abs(ch_size)))
         rgb_values = cmap(norm(ch_size))
+
+        # Select channel names to plot
+        ch_names_ = np.array(ch_names, dtype=object)
+        ch_names_[abs(ch_size) < thresh] = 0
+
         save_mat_file(
             ch_size,
             xyz,
             rgb_values,
-            ch_names,
+            ch_names_,
             ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}",
         )
 
@@ -181,4 +199,3 @@ for name, metric in params["net_metrics"].items():
         idx_min = np.argmin(abs(ch_size))
         print("max: {:.2f}, ch: {}".format(ch_size[idx_max], ch_names[idx_max]))
         print("min: {:.2f}, ch: {}".format(ch_size[idx_min], ch_names[idx_min]))
-        # TODO: treshold for lateralization
