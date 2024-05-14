@@ -3,6 +3,7 @@ import numpy as np
 from mne.viz.topomap import _get_pos_outlines
 from mne.channels import make_dig_montage
 import mne
+import os
 
 
 def channel_pos(
@@ -30,7 +31,9 @@ def channel_pos(
     # Create info structure using the selected montage
     if montage_type == "file":
         # Load montage from file
-        with open("eeg_positions.json", "r") as f:
+        with open(
+            os.path.join(os.path.dirname(__file__), "eeg_positions.json"), "r"
+        ) as f:
             eeg_positions = json.load(f)
 
         montage = make_dig_montage(
