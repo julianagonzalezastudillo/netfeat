@@ -4,35 +4,17 @@ import gzip
 import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
-from moabb.datasets import (
-    BNCI2014001,
-    Lee2019_MI,
-    Zhou2016,
-    MunichMI,
-    Shin2017A,
-    Cho2017,
-    Schirrmeister2017,
-    Weibo2014,
-)
-from moabb.paradigms import LeftRightImagery
-from plottools.plot_positions import channel_pos_2d
 
-from config import load_config, ConfigPath
+from moabb.paradigms import LeftRightImagery
+from plottools.plot_positions import channel_pos
+
+from config import load_config, ConfigPath, DATASETS
 
 
 # Load configuration parameters
 params = load_config()
 csp_component_order = params["csp_component_order"]
 ch_names = params["ch_names"]
-
-datasets = [
-    BNCI2014001(),
-    # Cho2017(),
-    # Lee2019_MI(),
-    # Schirrmeister2017(),
-    # Weibo2014(),
-    # Zhou2016(),
-]
 
 paradigm = LeftRightImagery(fmin=params["fmin"], fmax=params["fmax"])  # for rh vs lh
 mi_class = {"rh": 0, "lh": 1}
@@ -45,7 +27,7 @@ ch_dict = dict.fromkeys(ch_keys, [])
 ch_dict_sub = dict.fromkeys(ch_keys, [])
 
 # get electrodes positions
-ch_pos = channel_pos_2d(ch_keys)
+ch_pos = channel_pos(ch_keys)
 
 # plot params
 colors = [[0.0, "#fffcf0"], [0.7, "#ffe17a"], [1.0, "#ffc600"]]
@@ -53,7 +35,7 @@ cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
 
 for csp_f_p in ["filters", "patterns"]:
     for class_name in ["rh", "lh"]:
-        for dt in datasets:
+        for dt in DATASETS:
             # Loop through datasets
             for subject in dt.subject_list:
                 data = dt.get_data([subject])
@@ -133,7 +115,7 @@ for csp_f_p in ["filters", "patterns"]:
             ConfigPath.RES_CSP
             / f"plot/csp_{csp_f_p}_mean_across_sub_alpha_beta_{class_name}.png"
         )
-        fig.savefig(fig_name, transparent=True)
+        # fig.savefig(fig_name, transparent=True)
 
         # print 10 highest values channels
         print(f"{csp_f_p} {class_name}")

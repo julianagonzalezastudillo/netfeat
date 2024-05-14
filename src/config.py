@@ -1,18 +1,39 @@
-from pathlib import Path
 import os
 import json
 
 import os.path
 from pathlib import Path
 from moabb.paradigms import LeftRightImagery
+from moabb.datasets import (
+    BNCI2014001,
+    Cho2017,
+    Lee2019_MI,
+    MunichMI,
+    PhysionetMI,
+    Shin2017A,
+    Schirrmeister2017,
+    Weibo2014,
+    Zhou2016,
+)
 
 P_VAL = 0.05
 N_FEATURES = 10
 LATERALIZATION_METRIC = ["local_laterality", "segregation", "integration"]
+DATASETS = [
+    BNCI2014001(),
+    Cho2017(),
+    Lee2019_MI(),
+    MunichMI(),
+    PhysionetMI(),
+    Shin2017A(accept=True),
+    Schirrmeister2017(),
+    Weibo2014(),
+    Zhou2016(),
+]  # for rh vs lh
 
 
 class ConfigPath:
-    RES_DIR = Path(os.getcwd()) / "results"
+    RES_DIR = Path(os.getcwd(), "../results")
     RES_DIR.mkdir(parents=True, exist_ok=True)
 
     RES_CLASSIFY_DIR = RES_DIR / "classification"

@@ -15,38 +15,15 @@ import numpy as np
 from mne.decoding import CSP
 from moabb.paradigms import LeftRightImagery
 from tools import suppress_stdout
-from config import load_config, ConfigPath
-
-from moabb.datasets import (
-    BNCI2014001,
-    Cho2017,
-    Lee2019_MI,
-    MunichMI,
-    PhysionetMI,
-    Shin2017A,
-    Schirrmeister2017,
-    Weibo2014,
-    Zhou2016,
-)
+from config import load_config, ConfigPath, DATASETS
 
 
-# Load data
-datasets = [
-    BNCI2014001(),
-    Cho2017(),
-    Lee2019_MI(),
-    MunichMI(),
-    PhysionetMI(),
-    Shin2017A(accept=True),
-    Schirrmeister2017(),
-    Weibo2014(),
-    Zhou2016(),
-]
+# Load paremeters
 params = load_config()
 paradigm = LeftRightImagery(fmin=params["fmin"], fmax=params["fmax"])  # for rh vs lh
 csp_component_order = params["csp_component_order"]
 
-for dt in datasets:
+for dt in DATASETS:
     for subject in dt.subject_list:
         # Get data for the current subject
         X, y, metadata = paradigm.get_data(
