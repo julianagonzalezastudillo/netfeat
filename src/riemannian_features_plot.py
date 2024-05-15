@@ -55,11 +55,14 @@ fig = plt.figure(figsize=(7, 5), dpi=300)
 # Define colors
 colors = [
     [0.0, "#ffffe0"],
-    [0.25, "#A8C981"],
-    [0.5, "#59923F"],
-    [0.75, "#386F35"],
-    [1.0, "#1C391B"],
+    [0.25, "#eceaaf"],
+    [0.5, "#8cc379"],
+    [0.75, "#269042"],
+    [1.0, "#05550c"],
 ]
+# f7fcb9
+# addd8e
+# 31a354
 cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
 im = plt.scatter(
     ch_pos[:, 0],
@@ -101,10 +104,7 @@ norm = plt.Normalize(vmin=0, vmax=max(abs(ch_norm)))
 rgb_values = cmap(norm(ch_norm))
 
 save_mat_file(
-    ch_norm,
-    rgb_values,
-    ch_keys,
-    f"riemannian_occurrences",  # _{dts}",
+    ch_norm, rgb_values, ch_keys, f"riemannian_occurrences", colors  # _{dts}",
 )
 
 # Print min-max channels

@@ -173,6 +173,7 @@ for name, metric in params["net_metrics"].items():
             rgb_values,
             ch_names,
             f"t_test_{metric}_{dts}",
+            colors,
             names_idx=ch_name_idx,
         )
 
