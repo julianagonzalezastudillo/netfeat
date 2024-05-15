@@ -156,7 +156,7 @@ for name, metric in params["net_metrics"].items():
         ax.set_ylim(min(positions[:, 1]) * 1.1, max(positions[:, 1]) * 1.1)
         # plt.title(f"{dts} {metric}")
         colorbar(fig, thplot)
-        plt.show()
+        # plt.show()
         fig_name = ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}.png"
         fig.savefig(fig_name, transparent=True)
 
@@ -166,15 +166,14 @@ for name, metric in params["net_metrics"].items():
         rgb_values = cmap(norm(ch_size))
 
         # Select channel names to plot
-        ch_names_ = np.array(ch_names, dtype=object)
-        ch_names_[abs(ch_size) < thresh] = 0
+        ch_name_idx = np.where(np.abs(ch_size) > thresh)[0]
 
         save_mat_file(
             ch_size,
-            xyz,
             rgb_values,
-            ch_names_,
-            ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}",
+            ch_names,
+            f"t_test_{metric}_{dts}",
+            names_idx=ch_name_idx,
         )
 
         # Print min-max channels

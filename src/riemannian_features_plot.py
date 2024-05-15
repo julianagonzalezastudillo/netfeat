@@ -5,7 +5,7 @@ import pandas as pd
 from collections import Counter
 
 from plottools.plot_positions import channel_pos
-from plottools.plot_tools import colorbar
+from plottools.plot_tools import colorbar, save_mat_file
 from config import load_config, ConfigPath, DATASETS
 
 
@@ -52,7 +52,14 @@ ch_pos = channel_pos(ch_keys, dimension="2d")
 
 # Create 2D figure
 fig = plt.figure(figsize=(7, 5), dpi=300)
-colors = [[0, "#e1e8ed"], [1.0, "#ff843c"]]
+# Define colors
+colors = [
+    [0.0, "#ffffe0"],
+    [0.25, "#A8C981"],
+    [0.5, "#59923F"],
+    [0.75, "#386F35"],
+    [1.0, "#1C391B"],
+]
 cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
 im = plt.scatter(
     ch_pos[:, 0],
@@ -82,11 +89,26 @@ plt.gca().set_aspect("equal", adjustable="box")
 plt.axis("off")
 # plt.title("RG occurrences")
 colorbar(fig, im)
-
-
 plt.show()
 fig_name = (
     ConfigPath.RES_DIR
     / "riemannian_features/plot/riemannian_occurrences_mean_across_sub.png"
 )
 # fig.savefig(fig_name, transparent=True)
+
+# Get 3D layout and save
+norm = plt.Normalize(vmin=0, vmax=max(abs(ch_norm)))
+rgb_values = cmap(norm(ch_norm))
+
+save_mat_file(
+    ch_norm,
+    rgb_values,
+    ch_keys,
+    f"riemannian_occurrences",  # _{dts}",
+)
+
+# Print min-max channels
+idx_max = np.argmax(abs(ch_norm))
+idx_min = np.argmin(abs(ch_norm))
+print("max: {:.2f}, ch: {}".format(ch_norm[idx_max], ch_keys[idx_max]))
+print("min: {:.2f}, ch: {}".format(ch_norm[idx_min], ch_keys[idx_min]))

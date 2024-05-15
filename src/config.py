@@ -23,7 +23,7 @@ DATASETS = [
     BNCI2014001(),
     Cho2017(),
     Lee2019_MI(),
-    MunichMI(),
+    # MunichMI(),
     PhysionetMI(),
     Shin2017A(accept=True),
     Schirrmeister2017(),
@@ -47,6 +47,9 @@ class ConfigPath:
 
     RES_NET = RES_DIR / "netmetric"
     RES_NET.mkdir(parents=True, exist_ok=True)
+
+    RES_3DPLOT = RES_DIR / "3Dplot"
+    RES_3DPLOT.mkdir(parents=True, exist_ok=True)
 
 
 # Application settings
