@@ -6,7 +6,7 @@ from collections import Counter
 
 from plottools.plot_positions import channel_pos
 from plottools.plot_tools import colorbar, save_mat_file
-from config import load_config, ConfigPath, DATASETS
+from config import load_config, ConfigPath, DATASETS, EXCLUDE_CHANNELS
 
 
 # Load params
@@ -40,6 +40,7 @@ for dt in DATASETS:
 
     # count channels
     ch_dict.update({ch_i: ch_dict[ch_i] + ch.count(ch_i) for ch_i in np.unique(ch)})
+ch_keys = ch_keys[~np.isin(ch_keys, EXCLUDE_CHANNELS)]
 
 # normalize by times it could have been selected == occurrences
 ch_norm = np.array(

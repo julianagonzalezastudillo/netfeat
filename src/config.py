@@ -19,6 +19,7 @@ from moabb.datasets import (
 P_VAL = 0.05
 N_FEATURES = 10
 LATERALIZATION_METRIC = ["local_laterality", "segregation", "integration"]
+EXCLUDE_CHANNELS = ["F9", "F10", "FT9", "FT10", "M1", "M2"]
 DATASETS = [
     BNCI2014001(),
     Cho2017(),

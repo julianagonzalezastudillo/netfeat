@@ -6,7 +6,7 @@ import pandas as pd
 from networktools.net_topo import channel_idx, positions_matrix
 from plottools.plot_positions import channel_pos
 from plottools.plot_tools import colorbar, save_mat_file
-from config import load_config, ConfigPath, LATERALIZATION_METRIC
+from config import load_config, ConfigPath, LATERALIZATION_METRIC, EXCLUDE_CHANNELS
 
 
 def channel_size(df, channel_names, effect_size=False):
@@ -71,13 +71,11 @@ for dt in df_t_test.dataset.unique():
 # Define colors
 colors = [
     [0.0, "#0045ff"],
-    [0.125, "#4d7bfe"],
-    [0.25, "#86aaf8"],
-    [0.375, "#c0d5ee"],
+    [0.167, "#3e90ff"],
+    [0.334, "#74d1fa"],
     [0.5, "#ffffe0"],
-    [0.625, "#ffcda5"],
-    [0.75, "#ff966a"],
-    [0.875, "#fa532d"],
+    [0.668, "#f9c15f"],
+    [0.835, "#ed7a23"],
     [1.0, "#d90000"],
 ]
 cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
@@ -107,7 +105,7 @@ for name, metric in params["net_metrics"].items():
             ch_names = df_metric_dt.node.unique()
             fig, ax = plt.subplots(figsize=(7, 5), dpi=300)
             xlim_max = max(positions[:, 0])
-        ch_names = ch_names[~np.isin(ch_names, ["F9", "F10", "M1", "M2"])]
+        ch_names = ch_names[~np.isin(ch_names, EXCLUDE_CHANNELS)]
 
         # Assign position to each node
         ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
