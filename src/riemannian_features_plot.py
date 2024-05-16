@@ -9,107 +9,171 @@ from plottools.plot_tools import colorbar, save_mat_file
 from config import load_config, ConfigPath, DATASETS, EXCLUDE_CHANNELS
 
 
+def total_channels(dataset):
+    """Count how many times each channel could be selected: ch*dt_sub*dt_sessions*cv
+
+    Parameters
+    ----------
+    dataset : dataset instance
+        The dataset to count channels for.
+
+    Returns
+    -------
+    channel_counts : dict
+        A dictionary containing the count of how many times each channel
+        could be selected.
+    """
+    if dataset == "all":
+        channel_list = [
+            item
+            for dt_ in DATASETS
+            for item in params["ch_names"][dt_.code]
+            * len(dt_.subject_list)
+            * dt_.n_sessions
+            * params["cv"]
+        ]
+    else:
+        channel_list = (
+            params["ch_names"][dataset.code]
+            * len(dataset.subject_list)
+            * dataset.n_sessions
+            * params["cv"]
+        )
+
+    # Count occurrences of each channel in the channel list
+    channel_total = Counter(channel_list)
+
+    return dict(channel_total)
+
+
+def normalize_channel_sizes(count, total, select_channels=None):
+    """Count how many times each channel could be selected: ch*dt_sub*dt_sessions*cv
+
+    Parameters
+    ----------
+    count : dict
+        Dictionary containing all the channel counts.
+
+    total : dict
+        Dictionary containing all the maximum possible channel counts.
+
+    select_channels : list
+        Array containing a specific list of channels to be selected.
+
+    Returns
+    -------
+    ch_norm : array-like (n_channels,)
+        Array containing the normalized channel sizes.
+
+    """
+    if select_channels is None:
+        channels = np.array(list(count.keys()))
+    else:
+        channels = select_channels
+    ch_norm = np.array(
+        [count[ch] / total[ch] if total[ch] != 0 else 0 for ch in channels]
+    )
+    return ch_norm
+
+
 # Load params
 params, paradigm = load_config()
 pipeline = "RG+SVM"
 
 # create dict with all the possible channels in all datasets
-ch_keys = np.unique(sum(params["ch_names"].values(), []))
-ch_dict = dict.fromkeys(ch_keys, 0)
+ch_keys_all = np.unique(sum(params["ch_names"].values(), []))
+ch_count_all = dict.fromkeys(ch_keys_all, 0)
 
-# in order to normalize, we need to know
-# how many times each channel could be selected: ch*dt_sub*dt_sessions*cv
-ch_list = sum(
-    [
-        params["ch_names"][dt_.code] * len(dt_.subject_list) * dt_.n_sessions * 5
-        for dt_ in DATASETS
-    ],
-    [],
-)
-ch_counts = Counter(ch_list)
+for dt in np.append(DATASETS, "all"):
+    if dt == "all":
+        dt_code = "all"
+        ch_count = ch_count_all
+        ch_names = np.array(list(ch_count.keys()))
+    else:
+        # load selected features file
+        dt_code = dt.code
+        fs = pd.read_csv(
+            ConfigPath.RES_DIR
+            / f"select_features/select_features_{dt_code}_{pipeline}.csv"
+        )
 
-for dt in DATASETS:
-    # load selected features file
-    filename = (
-        ConfigPath.RES_DIR / f"select_features/select_features_{dt.code}_{pipeline}.csv"
-    )
-    fs = pd.read_csv(filename)
+        # all selected channels
+        ch = [c for ch_cv in fs["ch"] for c in ch_cv.strip("']['").split("' '")]
 
-    # all selected channels
-    ch = [c for ch_cv in fs["ch"] for c in ch_cv.strip("']['").split("' '")]
+        # Count channels per dataset
+        ch_count = dict(Counter(ch))
+        ch_names = np.array(list(ch_count.keys()))
 
-    # count channels
-    ch_dict.update({ch_i: ch_dict[ch_i] + ch.count(ch_i) for ch_i in np.unique(ch)})
-ch_keys = ch_keys[~np.isin(ch_keys, EXCLUDE_CHANNELS)]
+        # Count channels for all datasets
+        ch_count_all.update(
+            {ch_i: ch_count_all[ch_i] + ch.count(ch_i) for ch_i in np.unique(ch)}
+        )
 
-# normalize by times it could have been selected == occurrences
-ch_norm = np.array(
-    [ch_dict[ch] / ch_counts[ch] if ch_counts[ch] != 0 else 0 for ch in ch_keys]
-)
-ch_size_norm_to_plot = ch_norm / max(abs(ch_norm))  # for normalize size
+    # Exclude channels
+    ch_names = ch_names[~np.isin(ch_names, EXCLUDE_CHANNELS)]
 
-# get electrodes positions
-ch_pos = channel_pos(ch_keys, dimension="2d")
+    # normalize by times it could have been selected == occurrences
+    ch_total = total_channels(dt)
+    ch_norm = normalize_channel_sizes(ch_count, ch_total, select_channels=ch_names)
+    ch_size = ch_norm / max(abs(ch_norm))  # for normalize size between 0, 1
 
-# Create 2D figure
-fig = plt.figure(figsize=(7, 5), dpi=300)
-# Define colors
-colors = [
-    [0.0, "#ffffe0"],
-    [0.25, "#eceaaf"],
-    [0.5, "#8cc379"],
-    [0.75, "#269042"],
-    [1.0, "#05550c"],
-]
-# f7fcb9
-# addd8e
-# 31a354
-cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
-im = plt.scatter(
-    ch_pos[:, 0],
-    ch_pos[:, 1],
-    s=(abs(ch_size_norm_to_plot) * fig.dpi / 6) ** 2,
-    c=ch_norm,
-    marker=".",
-    cmap=cmap,
-    alpha=1,
-    linewidths=0,
-    edgecolors="k",
-)
+    # get electrodes positions
+    ch_pos = channel_pos(ch_names, dimension="2d")
 
-for i, ch in zip(np.arange(len(ch_keys)), ch_keys):
-    plt.text(
-        ch_pos[i, 0],
-        ch_pos[i, 1],
-        ch,
-        fontsize=6,
-        horizontalalignment="center",
-        verticalalignment="center",
-        c="k",
-        fontname="Arial",
+    # Create 2D figure
+    fig = plt.figure(figsize=(7, 5), dpi=300)
+
+    # Define colors
+    colors = params["colorbar"]["riemannian"]
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
+    im = plt.scatter(
+        ch_pos[:, 0],
+        ch_pos[:, 1],
+        s=(abs(ch_size) * fig.dpi / 6) ** 2,
+        c=ch_norm,
+        marker=".",
+        cmap=cmap,
+        alpha=1,
+        linewidths=0,
+        edgecolors="k",
     )
 
-plt.gca().set_aspect("equal", adjustable="box")
-plt.axis("off")
-# plt.title("RG occurrences")
-colorbar(fig, im)
-plt.show()
-fig_name = (
-    ConfigPath.RES_DIR
-    / "riemannian_features/plot/riemannian_occurrences_mean_across_sub.png"
-)
-# fig.savefig(fig_name, transparent=True)
+    for i, ch in zip(np.arange(len(ch_names)), ch_names):
+        plt.text(
+            ch_pos[i, 0],
+            ch_pos[i, 1],
+            ch,
+            fontsize=6,
+            horizontalalignment="center",
+            verticalalignment="center",
+            c="k",
+            fontname="Arial",
+        )
 
-# Get 3D layout and save
-norm = plt.Normalize(vmin=0, vmax=max(abs(ch_norm)))
-rgb_values = cmap(norm(ch_norm))
+    plt.gca().set_aspect("equal", adjustable="box")
+    plt.axis("off")
+    # plt.title("RG occurrences")
+    colorbar(fig, im)
+    plt.show()
+    fig_name = (
+        ConfigPath.RES_DIR
+        / f"riemannian_features/plot/riemannian_occurrences_{dt_code}.png"
+    )
+    # fig.savefig(fig_name, transparent=True)
 
-save_mat_file(
-    ch_norm, rgb_values, ch_keys, f"riemannian_occurrences", colors  # _{dts}",
-)
+    # Get 3D layout and save
+    norm = plt.Normalize(vmin=0, vmax=max(abs(ch_norm)))
+    rgb_values = cmap(norm(ch_norm))
+    save_mat_file(
+        ch_norm,
+        rgb_values,
+        ch_names,
+        f"riemannian_occurrences_{dt_code}",
+        colors,  # _{dts}"
+    )
 
-# Print min-max channels
-idx_max = np.argmax(abs(ch_norm))
-idx_min = np.argmin(abs(ch_norm))
-print("max: {:.2f}, ch: {}".format(ch_norm[idx_max], ch_keys[idx_max]))
-print("min: {:.2f}, ch: {}".format(ch_norm[idx_min], ch_keys[idx_min]))
+    # Print min-max channels
+    idx_max = np.argmax(abs(ch_norm))
+    idx_min = np.argmin(abs(ch_norm))
+    print("max: {:.2f}, ch: {}".format(ch_norm[idx_max], ch_names[idx_max]))
+    print("min: {:.2f}, ch: {}".format(ch_norm[idx_min], ch_names[idx_min]))
