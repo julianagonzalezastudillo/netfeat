@@ -67,11 +67,17 @@
     "Zhou 2016": "standard_1020"
     },
   "palette" : {
-    "coh+s+SVM": "grey",
+    "coh+s+SVM": "#4253D6",
     "coh+lat+SVM": "#FBE88F",
-    "coh+seg+SVM": "#4253D6",
+    "coh+seg+SVM": "#f6ad76",
     "coh+intg+SVM": "#EC6D5C",
     "RG+SVM": "#e1e8ed",
-    "CSP+PS+SVM": "k"
+    "CSP+PS+SVM": "grey",
+    "PSD+SVM": "k"
+  },
+  "colorbar" : {
+    "csp": [[0.0, "#ffffe0"], [0.25, "#f5da83"], [0.5, "#dfb740"], [0.75, "#c69422"], [1.0, "#ad7100"]],
+    "riemannian": [[0.0, "#ffffe0"], [0.25, "#eceaaf"], [0.5, "#8cc379"], [0.75, "#269042"], [1.0, "#05550c"]],
+    "net": [[0.0, "#0045ff"], [0.167, "#3e90ff"], [0.334, "#74d1fa"], [0.5, "#ffffe0"], [0.668, "#f9c15f"], [0.835, "#ed7a23"], [1.0, "#d90000"]]
   }
 }
