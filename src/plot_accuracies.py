@@ -6,10 +6,23 @@ Plot classification results. Here we plot the results using some of the convenie
 The score_plot visualizes all the data with one score per subject for every dataset and pipeline.
 """
 import pandas as pd
+import numpy as np
 from moabb.analysis.meta_analysis import compute_dataset_statistics
 import matplotlib.pyplot as plt
 from plottools.plot_scores import score_plot, meta_analysis_plot
 from config import ConfigPath, load_config, DATASETS
+
+
+def format_mean_std(group):
+    """
+    # Custom function to format mean and std together
+    """
+    mean = group["mean"]
+    std = group["std"]
+    if np.isnan(std):
+        return f"{mean:.1f}±NaN  |  "
+    else:
+        return f"{mean:.1f}±{std:.1f}  |  "
 
 
 # Define constants
@@ -54,9 +67,31 @@ plt.show()
 # Plot stats
 stats = compute_dataset_statistics(results)
 for algo, algo_name in zip(
-    ["RG+SVM", "coh+s+SVM", "coh+lat+SVM", "coh+seg+SVM", "coh+intg+SVM"],
-    ["RG+SVM", "s+SVM", "lat+SVM", "seg+SVM", "intg+SVM"],
+    ["CSP+PS+SVM", "RG+SVM", "coh+s+SVM", "coh+lat+SVM", "coh+seg+SVM", "coh+intg+SVM"],
+    ["CSP+SVM", "RG+SVM", "s+SVM", "lat+SVM", "seg+SVM", "intg+SVM"],
 ):
-    fig, ax = meta_analysis_plot(stats, algo, "CSP+PS+SVM", algo_name, "CSP+SVM")
+    fig, ax = meta_analysis_plot(stats, algo, "PSD+SVM", algo_name, "PSD+SVM")
     plt.show()
-# fig.savefig('test.png', transparent=True)
+fig.savefig("test.png", transparent=True)
+
+# Print table of pipelines means
+table = select_results
+table["score"] *= 100
+
+# Compute the mean and standard deviation of the scores per dataset and pipeline
+stats = table.groupby(["dataset", "pipeline"])["score"].agg(["mean", "std"])
+stats["mean_std"] = stats.apply(format_mean_std, axis=1)
+pivoted_stats = stats["mean_std"].unstack(level=1)
+print(pivoted_stats.reset_index().to_string(index=False))
+
+# Print total means
+test = table.pivot_table(
+    index="pipeline", columns="dataset", values="score", aggfunc="mean"
+)
+mean_across_datasets = test.mean(axis=1)
+std_across_datasets = test.std(axis=1)
+pipeline_stats = pd.DataFrame(
+    {"mean": mean_across_datasets, "std": std_across_datasets}
+)
+pipeline_stats["mean_std"] = pipeline_stats.apply(format_mean_std, axis=1)
+print(pipeline_stats["mean_std"].to_string())
