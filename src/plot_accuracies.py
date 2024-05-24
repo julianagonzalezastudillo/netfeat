@@ -83,6 +83,7 @@ for ax_row in axs:
     for ax in ax_row:
         ax.axis("off")
 plt.tight_layout()
+fig.savefig(res_classify_plot / f"classif_stats.png", transparent=True)
 plt.show()
 
 # Print table of pipelines means
