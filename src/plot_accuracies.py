@@ -46,7 +46,7 @@ for name, metric in params["net_metrics"].items():
     select = results[results["pipeline"] == f"coh+{name}+SVM"]
     select_results = pd.concat([select_results, select], ignore_index=True)
 
-# Sort by custom order
+# Sort by pipeline order
 select_results["pipeline"] = pd.Categorical(
     select_results["pipeline"], categories=params["pipeline_order"], ordered=True
 )
@@ -66,6 +66,7 @@ plt.show()
 
 # Plot stats
 stats = compute_dataset_statistics(select_results)
+stats = stats.sort_values(by="dataset", ascending=False)
 algos = ["s+SVM", "λ+SVM", "σ+SVM", "ω+SVM"]
 for algo in algos:
     fig, ax = meta_analysis_plot(stats, algo, "PSD+SVM")
@@ -76,7 +77,7 @@ for algo in algos:
 images = [
     mpimg.imread(res_classify_plot / f"classif_stats_{algo}.png") for algo in algos
 ]
-fig, axs = plt.subplots(2, 2, figsize=(16, 12), dpi=300)
+fig, axs = plt.subplots(2, 2, figsize=(16, 12), dpi=600)
 [axs[i, j].imshow(images[i * 2 + j]) for i in range(2) for j in range(2)]
 
 for ax_row in axs:

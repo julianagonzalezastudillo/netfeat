@@ -46,7 +46,7 @@ def score_plot(data, pipelines=None):
     data["dataset"] = data["dataset"].apply(moabb_plt._simplify_names)
     if pipelines is not None:
         data = data[data.pipeline.isin(pipelines)]
-    fig = plt.figure(figsize=(8, 9), dpi=300)
+    fig = plt.figure(figsize=(8, 9), dpi=600)
     ax = fig.add_subplot(111)
 
     # marker
@@ -165,9 +165,9 @@ def meta_analysis_plot(
 
     def _marker(pval):
         if pval < 0.001:
-            return "$***$", 100
+            return "$* **$", 200
         elif pval < 0.01:
-            return "$**$", 70
+            return "$**$", 60
         elif pval < 0.05:
             return "$*$", 30
         else:
@@ -181,7 +181,7 @@ def meta_analysis_plot(
     df_bk = df_bk.sort_values(by="pipe1")
     dsets = df_fw.dataset.unique()
     ci = []
-    fig = plt.figure(dpi=300)
+    fig = plt.figure(dpi=600)
     gs = gridspec.GridSpec(1, 5)
     sig_ind = []
     pvals = []
@@ -224,7 +224,9 @@ def meta_analysis_plot(
     )
     for i, p in zip(sig_ind, pvals):
         m, s = _marker(p)
-        ax.scatter(df_fw["smd"].iloc[i], i + 1.4, s=s, marker=m, color="r")
+        ax.scatter(
+            df_fw["smd"].iloc[i], i + 1.4, s=s, marker=m, color="r", linewidths=0.5
+        )
     # pvalues axis stuf
     pval_ax.set_xlim([-0.1, 0.1])
     pval_ax.grid(False)
@@ -245,7 +247,7 @@ def meta_analysis_plot(
         p = combine_pvalues(df_fw["p"], df_fw["nsub"])
         if p < 0.05:
             m, s = _marker(p)
-            ax.scatter([final_effect], [-0.4], s=s, marker=m, c="r")
+            ax.scatter([final_effect], [-0.4], s=s, marker=m, c="r", linewidths=0)
             pval_ax.text(
                 0,
                 0,
@@ -258,7 +260,7 @@ def meta_analysis_plot(
         p = combine_pvalues(df_bk["p"], df_bk["nsub"])
         if p < 0.05:
             m, s = _marker(p)
-            ax.scatter([final_effect], [-0.4], s=s, marker=m, c="r")
+            ax.scatter([final_effect], [-0.4], s=s, marker=m, c="r", linewidths=0)
             pval_ax.text(
                 0,
                 0,
