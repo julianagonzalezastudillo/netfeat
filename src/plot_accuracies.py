@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 from moabb.analysis.meta_analysis import compute_dataset_statistics
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 from plottools.plot_scores import score_plot, meta_analysis_plot
 from config import ConfigPath, load_config, DATASETS
 
@@ -64,14 +65,25 @@ fig.savefig(res_classify_plot / "classif_acc.png", transparent=True)
 plt.show()
 
 # Plot stats
-stats = compute_dataset_statistics(results)
-for algo, algo_name in zip(
-    ["CSP+PS+SVM", "RG+SVM", "coh+s+SVM", "coh+lat+SVM", "coh+seg+SVM", "coh+intg+SVM"],
-    ["CSP+SVM", "RG+SVM", "s+SVM", "lat+SVM", "seg+SVM", "intg+SVM"],
-):
-    fig, ax = meta_analysis_plot(stats, algo, "PSD+SVM", algo_name, "PSD+SVM")
+stats = compute_dataset_statistics(select_results)
+algos = ["s+SVM", "λ+SVM", "σ+SVM", "ω+SVM"]
+for algo in algos:
+    fig, ax = meta_analysis_plot(stats, algo, "PSD+SVM")
+    fig.savefig(res_classify_plot / f"classif_stats_{algo}.png", transparent=True)
     plt.show()
-fig.savefig("test.png", transparent=True)
+
+# Put four figure in one
+images = [
+    mpimg.imread(res_classify_plot / f"classif_stats_{algo}.png") for algo in algos
+]
+fig, axs = plt.subplots(2, 2, figsize=(16, 12), dpi=300)
+[axs[i, j].imshow(images[i * 2 + j]) for i in range(2) for j in range(2)]
+
+for ax_row in axs:
+    for ax in ax_row:
+        ax.axis("off")
+plt.tight_layout()
+plt.show()
 
 # Print table of pipelines means
 table = select_results

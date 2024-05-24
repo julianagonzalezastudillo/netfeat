@@ -140,7 +140,7 @@ def _simplify_names(x):
 
 
 def meta_analysis_plot(
-    stats_df, alg1, alg2, alg1_new_name, alg2_new_name
+    stats_df, alg1, alg2, alg1_name=None, alg2_name=None
 ):  # noqa: C901
     """Meta-analysis to compare two algorithms across several datasets
 
@@ -274,12 +274,12 @@ def meta_analysis_plot(
     ax.axvline(0, linestyle="--", c="k")
     ax.axhline(0.5, linestyle="-", linewidth=3, c="k")
 
-    title = "< {} better{}\n{}{} better >".format(
-        alg2_new_name,
-        " " * (45 - len(alg2_new_name)),
-        " " * (45 - len(alg1_new_name)),
-        alg1_new_name,
-    )
+    alg1_name = alg1_name if alg1_name is not None else alg1
+    alg2_name = alg2_name if alg2_name is not None else alg2
+
+    space1 = " " * (45 - len(alg1_name))
+    space2 = " " * (45 - len(alg2_name))
+    title = f"< {alg2_name} better{space2}\n{space1}{alg1_name} better >"
     ax.set_title(title, ha="left", ma="right", loc="left")
     ax.set_xlabel("Standardized Mean Difference")
     fig.tight_layout()
