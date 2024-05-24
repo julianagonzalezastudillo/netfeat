@@ -46,22 +46,21 @@ for name, metric in params["net_metrics"].items():
     select_results = pd.concat([select_results, select], ignore_index=True)
 
 # Sort by custom order
-pipeline_order = [
-    "PSD+SVM",
-    "CSP+PS+SVM",
-    "RG+SVM",
-    "coh+s+SVM",
-    "coh+lat+SVM",
-    "coh+seg+SVM",
-    "coh+intg+SVM",
-]
 select_results["pipeline"] = pd.Categorical(
-    select_results["pipeline"], categories=pipeline_order, ordered=True
+    select_results["pipeline"], categories=params["pipeline_order"], ordered=True
 )
 select_results = select_results.sort_values("pipeline")
 
-# Plot accuracies
+# Rename pipelines for plot
+select_results["pipeline"] = select_results["pipeline"].replace(
+    params["pipeline_names"]
+)
+
+# Plot accuracies and save
 fig, ax = score_plot(select_results)
+res_classify_plot = ConfigPath.RES_CLASSIFY_DIR / "plot"
+res_classify_plot.mkdir(parents=True, exist_ok=True)
+fig.savefig(res_classify_plot / "classif_acc.png", transparent=True)
 plt.show()
 
 # Plot stats
