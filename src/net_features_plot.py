@@ -2,11 +2,18 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 
 from networktools.net_topo import channel_idx, positions_matrix
 from plottools.plot_positions import channel_pos
 from plottools.plot_tools import colorbar, save_mat_file
-from config import load_config, ConfigPath, LATERALIZATION_METRIC, EXCLUDE_CHANNELS
+from config import (
+    load_config,
+    ConfigPath,
+    LATERALIZATION_METRIC,
+    EXCLUDE_CHANNELS,
+    P_VAL,
+)
 
 
 def channel_size(df, channel_names, effect_size=False):
@@ -69,24 +76,15 @@ for dt in df_t_test.dataset.unique():
     df_t_test.loc[df_t_test.dataset == dt, "nsub"] = nsubs
 
 # Define colors
-colors = [
-    [0.0, "#0045ff"],
-    [0.167, "#3e90ff"],
-    [0.334, "#74d1fa"],
-    [0.5, "#ffffe0"],
-    [0.668, "#f9c15f"],
-    [0.835, "#ed7a23"],
-    [1.0, "#d90000"],
-]
+colors = params["colorbar"]["net"]
 cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
 for name, metric in params["net_metrics"].items():
-    print(metric)
     # Filter by selected metric and create dict of channels and t-values
     df_metric = df_t_test[df_t_test["metric"] == metric]
-
+    print("*" * 100)
     # for each dataset or all datasets together
     for dts in np.append(df_metric.dataset.unique(), "all"):
-        print(dts)
+        print(f"{metric}: {dts}")
         if dts == "all":
             df_metric_dt = df_metric.loc[:]
             ch_names_dts = ch_keys
@@ -94,29 +92,35 @@ for name, metric in params["net_metrics"].items():
             df_metric_dt = df_metric.loc[df_metric["dataset"] == dts]
             ch_names_dts = params["ch_names"][dts]
 
-        if metric in LATERALIZATION_METRIC:
-            pos_dts = {key: value for key, value in pos.items() if key in ch_names_dts}
-            pos_dts = np.array([value for value in pos_dts.values()]).reshape(-1, 2)
-            RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names_dts, pos_dts)
-            ch_names = np.array([ch_names_dts[index] for index in LH_idx])
-            fig, ax = plt.subplots(figsize=(4, 5), dpi=300)
-            xlim_max = 0
-        else:
-            ch_names = df_metric_dt.node.unique()
-            fig, ax = plt.subplots(figsize=(7, 5), dpi=300)
-            xlim_max = max(positions[:, 0])
+        # if metric in LATERALIZATION_METRIC:
+        #     pos_dts = {key: value for key, value in pos.items() if key in ch_names_dts}
+        #     pos_dts = np.array([value for value in pos_dts.values()]).reshape(-1, 2)
+        #     RH_idx, LH_idx, CH_idx, CH_bis_idx = channel_idx(ch_names_dts, pos_dts)
+        #     ch_names = np.array([ch_names_dts[index] for index in LH_idx])
+        #     fig, ax = plt.subplots(figsize=(4, 5), dpi=300)
+        #     xlim_max = 0
+        # else:
+        #     ch_names = df_metric_dt.node.unique()
+        #     fig, ax = plt.subplots(figsize=(7, 5), dpi=300)
+        #     xlim_max = max(positions[:, 0])
+        ch_names = df_metric_dt.node.unique()
+        fig, ax = plt.subplots(figsize=(7, 5), dpi=300)
+        xlim_max = max(positions[:, 0])
         ch_names = ch_names[~np.isin(ch_names, EXCLUDE_CHANNELS)]
 
         # Assign position to each node
         ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
         ch_pos = np.array([pos[ch] for ch in ch_names])
 
-        # Threshold for node names
-        thresh = (
-            2
-            if metric in LATERALIZATION_METRIC
-            else abs(ch_size[np.argsort(abs(ch_size))[-10:]][0])
-        )
+        # Threshold for node names (p-val < 0.05)
+        n_subjects = 0
+        for dt_ in np.unique(df_metric_dt["dataset"]):
+            df = df_metric_dt.loc[df_metric_dt["dataset"] == dt_]
+            n_subjects += len(np.unique(df["subject"]))
+        thresh = stats.t.ppf(1 - P_VAL / 2, n_subjects)
+        print(f"t-val: {thresh}")
+        if not np.any(np.abs(ch_size) >= thresh):
+            thresh = abs(ch_size[np.argsort(abs(ch_size))[-10:]][0])
 
         # Define node size and max
         ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
@@ -154,17 +158,17 @@ for name, metric in params["net_metrics"].items():
         ax.set_ylim(min(positions[:, 1]) * 1.1, max(positions[:, 1]) * 1.1)
         # plt.title(f"{dts} {metric}")
         colorbar(fig, thplot)
-        # plt.show()
+        plt.show()
         fig_name = ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}.png"
         fig.savefig(fig_name, transparent=True)
 
         # Get 3D layout and save
-        xyz = channel_pos(ch_names, dimension="3d", montage_type="standard") * 900
         norm = plt.Normalize(vmin=-max(abs(ch_size)), vmax=max(abs(ch_size)))
         rgb_values = cmap(norm(ch_size))
 
         # Select channel names to plot
-        ch_name_idx = np.where(np.abs(ch_size) > thresh)[0]
+        ch_name_idx = np.where(np.abs(ch_size) >= thresh)[0]
+        ch_name_idx_sort = ch_name_idx[np.argsort(ch_size[ch_name_idx])]
 
         save_mat_file(
             ch_size,
@@ -175,8 +179,5 @@ for name, metric in params["net_metrics"].items():
             names_idx=ch_name_idx,
         )
 
-        # Print min-max channels
-        idx_max = np.argmax(abs(ch_size))
-        idx_min = np.argmin(abs(ch_size))
-        print("max: {:.2f}, ch: {}".format(ch_size[idx_max], ch_names[idx_max]))
-        print("min: {:.2f}, ch: {}".format(ch_size[idx_min], ch_names[idx_min]))
+        # Print significant channels
+        print(f"significant t-val: {ch_names[ch_name_idx_sort]}")
