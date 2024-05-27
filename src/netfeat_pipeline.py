@@ -28,6 +28,7 @@ from moabb_settings import add_attributes
 import save_features
 import logging
 from tqdm.auto import tqdm
+from config import ConfigPath, LATERALIZATION_METRIC
 
 
 log = logging.getLogger(__name__)
@@ -42,24 +43,41 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
         super().__init__(**kwargs)
 
     def evaluate(self, dataset, pipelines):
-        print(' ')
-        print('=' * 100)
-        print(bcolors.HEADER + "dataset: {0}".format(type(dataset).__name__) + bcolors.ENDC)
+        print(" ")
+        print("=" * 100)
+        print(
+            bcolors.HEADER
+            + "dataset: {0}".format(type(dataset).__name__)
+            + bcolors.ENDC
+        )
 
         for subject in tqdm(dataset.subject_list, desc=f"{dataset.code}-WithinSession"):
+            # if subject in [7]:
             print(" ")  # to avoid writing log in the same line as tqdm
             run_pipes = self.results.not_yet_computed(pipelines, dataset, subject)
             if len(run_pipes) == 0:
                 continue
 
-            X, y, metadata = self.paradigm.get_data(dataset=dataset, subjects=[subject], return_epochs=True)
+            X, y, metadata = self.paradigm.get_data(
+                dataset=dataset, subjects=[subject], return_epochs=True
+            )
             for name, clf_preproc in pipelines.items():
                 t_start = time()
                 cv = StratifiedKFold(5, shuffle=False, random_state=None)
                 dataset.sub = str(subject)
-                [add_attributes(clf_preproc[clf_preproc.steps[i][0]], dataset=dataset, pipeline=name, subject=subject,
-                                ch_names=X.ch_names, cv_splits=cv.n_splits, sessions_name=np.unique(metadata.session))
-                 for i in range(len(clf_preproc.steps))]
+                [
+                    add_attributes(
+                        clf_preproc[clf_preproc.steps[i][0]],
+                        dataset=dataset,
+                        pipeline=name,
+                        subject=subject,
+                        ch_names=X.ch_names,
+                        cv_splits=cv.n_splits,
+                        sessions_name=np.unique(metadata.session),
+                        sfreq=X.info["sfreq"],
+                    )
+                    for i in range(len(clf_preproc.steps))
+                ]
 
                 X_, clf = self.fc_net(X, clf_preproc)
 
@@ -69,16 +87,20 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                     le = LabelEncoder()  # to change string labels to numerical ones
                     y_session = le.fit_transform(y[ix])
                     nchan = np.array(X_).shape[1]
-                    [add_attributes(clf[clf.steps[i][0]], session=session) for i in range(len(clf.steps))]
+                    [
+                        add_attributes(clf[clf.steps[i][0]], session=session)
+                        for i in range(len(clf.steps))
+                    ]
 
-                    acc = cross_val_score(clf,
-                                          X_session,
-                                          y_session,
-                                          cv=cv,
-                                          scoring=self.paradigm.scoring,
-                                          n_jobs=self.n_jobs,
-                                          error_score=self.error_score
-                                          )
+                    acc = cross_val_score(
+                        clf,
+                        X_session,
+                        y_session,
+                        cv=cv,
+                        scoring=self.paradigm.scoring,
+                        n_jobs=self.n_jobs,
+                        error_score=self.error_score,
+                    )
                     score = acc.mean()
                     score_std = acc.std()
                     duration = time() - t_start
@@ -146,19 +168,14 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
         clf = deepcopy(clf_preproc)
         content = [clf.steps[i][0] for i in range(len(clf.steps))]
 
-        for estimator in ['functionalconnectivity', 'netmetric']:
+        for estimator in ["functionalconnectivity", "netmetric"]:
             if estimator in content:
                 method = clf[estimator].method
                 subject = clf.named_steps[estimator].subject
                 dataset = clf.named_steps[estimator].dataset
 
-                file_path = os.path.join(os.getcwd(), "results/{0}/".format(estimator))
-                if not os.path.exists(file_path):
-                    os.makedirs(file_path)
-
-                file_name = "{0}_{1}_{2}_{3}_{4}.gz"\
-                    .format(estimator, dataset.code, str(subject).zfill(3), "-".join(list(X.event_id)), method)
-                fc_file = os.path.join(file_path, file_name)
+                file_name = f"{estimator}_{dataset.code}_{str(subject).zfill(3)}_{'-'.join(list(X.event_id))}_{method}.gz"
+                fc_file = ConfigPath.RES_DIR / estimator / file_name
                 if os.path.exists(fc_file):
                     # print("Loading {0} ...".format(estimator))
                     # load
@@ -174,9 +191,14 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
                     with gzip.open(fc_file, "w") as f:  # save
                         Xfc = {method: X._data}
                         pickle.dump(Xfc, f)
-                step_index = [i for i, (name, _) in enumerate(clf.steps) if name == estimator][0]
+                step_index = [
+                    i for i, (name, _) in enumerate(clf.steps) if name == estimator
+                ][0]
                 clf.steps.pop(step_index)
-                [add_attributes(clf[clf.steps[i][0]], metric=method) for i in range(len(clf.steps))]
+                [
+                    add_attributes(clf[clf.steps[i][0]], metric=method)
+                    for i in range(len(clf.steps))
+                ]
             # else:
-                # concatenate connectivity matrix
+            # concatenate connectivity matrix
         return X._data, clf
