@@ -6,6 +6,7 @@ from collections import Counter
 
 from plottools.plot_positions import channel_pos
 from plottools.plot_tools import colorbar, save_mat_file
+from plottools.plot_features import feature_plot_2d
 from config import load_config, ConfigPath, DATASETS, EXCLUDE_CHANNELS
 
 
@@ -123,43 +124,18 @@ for dt in np.append(DATASETS, "all"):
     # Create 2D figure
     fig = plt.figure(figsize=(7, 5), dpi=300)
 
-    # Define colors
-    colors = params["colorbar"]["riemannian"]
-    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
-    im = plt.scatter(
-        ch_pos[:, 0],
-        ch_pos[:, 1],
-        s=(abs(ch_size) * fig.dpi / 6) ** 2,
-        c=ch_norm,
-        marker=".",
-        cmap=cmap,
-        alpha=1,
-        linewidths=0,
-        edgecolors="k",
-    )
-
-    for i, ch in zip(np.arange(len(ch_names)), ch_names):
-        plt.text(
-            ch_pos[i, 0],
-            ch_pos[i, 1],
-            ch,
-            fontsize=6,
-            horizontalalignment="center",
-            verticalalignment="center",
-            c="k",
-            fontname="Arial",
-        )
-
-    plt.gca().set_aspect("equal", adjustable="box")
-    plt.axis("off")
-    # plt.title("RG occurrences")
-    colorbar(fig, im)
+    # Create 2D figure
+    palette = params["colorbar"]["riemannian"]
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", palette)
+    ch_size_ = (abs(ch_size) * fig.dpi / 6) ** 2
+    ch_color = ch_norm
+    fig, ax = feature_plot_2d(ch_names, ch_pos, ch_size_, ch_color, cmap=cmap)
     plt.show()
     fig_name = (
         ConfigPath.RES_DIR
         / f"riemannian_features/plot/riemannian_occurrences_{dt_code}.png"
     )
-    # fig.savefig(fig_name, transparent=True)
+    fig.savefig(fig_name, transparent=True)
 
     # Get 3D layout and save
     norm = plt.Normalize(vmin=0, vmax=max(abs(ch_norm)))
@@ -169,7 +145,7 @@ for dt in np.append(DATASETS, "all"):
         rgb_values,
         ch_names,
         f"riemannian_occurrences_{dt_code}",
-        colors,  # _{dts}"
+        palette,
     )
 
     # Print min-max channels
