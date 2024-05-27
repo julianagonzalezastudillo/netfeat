@@ -1,7 +1,8 @@
 import scipy.io as sio
 import numpy as np
+from collections import Counter
 from .plot_positions import channel_pos
-from src.config import ConfigPath
+from src.config import ConfigPath, load_config, DATASETS
 
 
 def hex_to_rgb(hex_color):
@@ -86,3 +87,76 @@ def save_mat_file(ch_size, rgb, ch_name, file_name, colorbar, names_idx=None):
     }
 
     sio.savemat(ConfigPath.RES_3DPLOT / f"{file_name}.mat", values)
+
+
+def total_channels(dataset):
+    """Count how many times each channel could be selected: ch*dt_sub*dt_sessions*cv
+
+    Parameters
+    ----------
+    dataset : dataset instance
+        The dataset to count channels for.
+
+    Returns
+    -------
+    channel_counts : dict
+        A dictionary containing the count of how many times each channel
+        could be selected.
+    """
+    params, paradigm = load_config()
+    if dataset == "all":
+        channel_list = [
+            item
+            for dt_ in DATASETS
+            for item in params["ch_names"][dt_.code]
+            * len(dt_.subject_list)
+            * dt_.n_sessions
+            * params["cv"]
+        ]
+    else:
+        channel_list = (
+            params["ch_names"][dataset.code]
+            * len(dataset.subject_list)
+            * dataset.n_sessions
+            * params["cv"]
+        )
+
+    # Count occurrences of each channel in the channel list
+    channel_total = Counter(channel_list)
+
+    return dict(channel_total)
+
+
+def normalize_channel_sizes(count, dataset, select_channels=None):
+    """Count how many times each channel could be selected: ch*dt_sub*dt_sessions*cv
+
+    Parameters
+    ----------
+    count : dict
+        Dictionary containing all the channel counts.
+
+    dataset : dataset instance
+        The dataset to count channels for.
+
+    select_channels : list
+        Array containing a specific list of channels to be selected.
+
+    Returns
+    -------
+    ch_norm : array-like (n_channels,)
+        Array containing the normalized channel sizes.
+
+    """
+    if select_channels is None:
+        channels = np.array(list(count.keys()))
+    else:
+        channels = select_channels
+
+    # Dictionary containing all the maximum possible channel counts
+    ch_total = total_channels(dataset)
+
+    # Compute normalized size
+    ch_size_norm = np.array(
+        [count[c] / ch_total[c] if ch_total[c] != 0 else 0 for c in channels]
+    )
+    return ch_size_norm
