@@ -6,7 +6,8 @@ import scipy.stats as stats
 
 from networktools.net_topo import channel_idx, positions_matrix
 from plottools.plot_positions import channel_pos
-from plottools.plot_tools import colorbar, save_mat_file
+from plottools.plot_tools import save_mat_file
+from plottools.plot_features import feature_plot_2d
 from config import (
     load_config,
     ConfigPath,
@@ -104,7 +105,6 @@ for name, metric in params["net_metrics"].items():
         #     fig, ax = plt.subplots(figsize=(7, 5), dpi=300)
         #     xlim_max = max(positions[:, 0])
         ch_names = df_metric_dt.node.unique()
-        fig, ax = plt.subplots(figsize=(7, 5), dpi=300)
         xlim_max = max(positions[:, 0])
         ch_names = ch_names[~np.isin(ch_names, EXCLUDE_CHANNELS)]
 
@@ -124,40 +124,17 @@ for name, metric in params["net_metrics"].items():
 
         # Define node size and max
         ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
-        factor = 0.01 * fig.dpi * fig.get_size_inches()[0]
+        # factor = 0.01 * fig.dpi * fig.get_size_inches()[0]
+        factor = 21
 
         # Plot t-values
         divnorm = matplotlib.colors.TwoSlopeNorm(
             vmin=-max(abs(ch_size)), vcenter=0.0, vmax=max(abs(ch_size))
         )
-        thplot = ax.scatter(
-            ch_pos[:, 0],
-            ch_pos[:, 1],
-            s=(abs(ch_size) * factor) ** 2,
-            c=ch_size,
-            marker=".",
-            cmap=cmap,
-            norm=divnorm,
-            alpha=0.9,
-            linewidths=0,
+        ch_size_ = (abs(ch_size) * factor) ** 2
+        fig, ax = feature_plot_2d(
+            ch_names, ch_pos, ch_size, ch_size, cmap=cmap, divnorm=divnorm
         )
-        for i, ch in enumerate(ch_names):
-            ax.text(
-                ch_pos[i, 0],
-                ch_pos[i, 1],
-                ch,
-                fontname="Arial",
-                fontsize=6,
-                horizontalalignment="center",
-                verticalalignment="center",
-            )
-
-        ax.set_aspect("equal", adjustable="box")
-        ax.axis("off")
-        ax.set_xlim(min(positions[:, 0]), xlim_max)
-        ax.set_ylim(min(positions[:, 1]) * 1.1, max(positions[:, 1]) * 1.1)
-        # plt.title(f"{dts} {metric}")
-        colorbar(fig, thplot)
         plt.show()
         fig_name = ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}.png"
         fig.savefig(fig_name, transparent=True)

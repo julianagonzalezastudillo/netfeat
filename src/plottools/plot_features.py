@@ -1,5 +1,10 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors
+import numpy as np
+from collections import Counter
+
+from .plot_positions import channel_pos
+from src.config import load_config, DATASETS
 
 
 def colorbar(fig, scatter):
@@ -50,16 +55,20 @@ def feature_plot_2d(ch_names, ch_pos, ch_size, ch_color, cmap=None, divnorm=None
     """
 
     # Create 2D figure
-    fig, ax = plt.subplots(figsize=(7, 5), dpi=300)
+    dpi = 300
+    fig, ax = plt.subplots(figsize=(7, 5), dpi=dpi)
 
     if cmap is None:
         colors = [[0, "#e1e8ed"], [1.0, "#EC6D5C"]]
         cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
 
+    ch_size_ = (
+        abs(ch_size / max(abs(ch_size))) * dpi / 6
+    ) ** 2  # for normalize size between 0, 1
     thplot = plt.scatter(
         ch_pos[:, 0],
         ch_pos[:, 1],
-        s=ch_size,
+        s=ch_size_,
         c=ch_color,
         marker=".",
         cmap=cmap,
@@ -83,8 +92,88 @@ def feature_plot_2d(ch_names, ch_pos, ch_size, ch_color, cmap=None, divnorm=None
 
     ax.set_aspect("equal", adjustable="box")
     ax.axis("off")
-    # ax.set_xlim(min(positions[:, 0]), max(positions[:, 0]))
-    # ax.set_ylim(min(positions[:, 1]) * 1.1, max(positions[:, 1]) * 1.1)
+
+    # Get the same maximum size for all plots
+    params, paradigm = load_config()
+    ch_keys = np.unique(sum(params["ch_names"].values(), []))
+    positions = channel_pos(ch_keys, dimension="2d")
+    ax.set_xlim(min(positions[:, 0]), max(positions[:, 0]))
+    ax.set_ylim(min(positions[:, 1]) * 1.1, max(positions[:, 1]) * 1.1)
     # plt.title(f"{dts} {metric}")
+
+    # Add colorbar
     colorbar(fig, thplot)
     return fig, ax
+
+
+def total_channels(dataset):
+    """Count how many times each channel could be selected: ch*dt_sub*dt_sessions*cv
+
+    Parameters
+    ----------
+    dataset : dataset instance
+        The dataset to count channels for.
+
+    Returns
+    -------
+    channel_counts : dict
+        A dictionary containing the count of how many times each channel
+        could be selected.
+    """
+    params, paradigm = load_config()
+    if dataset == "all":
+        channel_list = [
+            item
+            for dt_ in DATASETS
+            for item in params["ch_names"][dt_.code]
+            * len(dt_.subject_list)
+            * dt_.n_sessions
+            * params["cv"]
+        ]
+    else:
+        channel_list = (
+            params["ch_names"][dataset.code]
+            * len(dataset.subject_list)
+            * dataset.n_sessions
+            * params["cv"]
+        )
+
+    # Count occurrences of each channel in the channel list
+    channel_total = Counter(channel_list)
+
+    return dict(channel_total)
+
+
+def normalize_channel_sizes(count, dataset, select_channels=None):
+    """Count how many times each channel could be selected: ch*dt_sub*dt_sessions*cv
+
+    Parameters
+    ----------
+    count : dict
+        Dictionary containing all the channel counts.
+
+    dataset : dataset instance
+        The dataset to count channels for.
+
+    select_channels : list
+        Array containing a specific list of channels to be selected.
+
+    Returns
+    -------
+    ch_norm : array-like (n_channels,)
+        Array containing the normalized channel sizes.
+
+    """
+    if select_channels is None:
+        channels = np.array(list(count.keys()))
+    else:
+        channels = select_channels
+
+    # Dictionary containing all the maximum possible channel counts
+    ch_total = total_channels(dataset)
+
+    # Compute normalized size
+    ch_size_norm = np.array(
+        [count[c] / ch_total[c] if ch_total[c] != 0 else 0 for c in channels]
+    )
+    return ch_size_norm
