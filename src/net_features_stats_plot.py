@@ -124,17 +124,12 @@ for name, metric in params["net_metrics"].items():
 
         # Define node size and max
         ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
-        # factor = 0.01 * fig.dpi * fig.get_size_inches()[0]
-        factor = 21
 
         # Plot t-values
         divnorm = matplotlib.colors.TwoSlopeNorm(
             vmin=-max(abs(ch_size)), vcenter=0.0, vmax=max(abs(ch_size))
         )
-        ch_size_ = (abs(ch_size) * factor) ** 2
-        fig, ax = feature_plot_2d(
-            ch_names, ch_pos, ch_size, ch_size, cmap=cmap, divnorm=divnorm
-        )
+        fig, ax = feature_plot_2d(ch_names, ch_pos, ch_size, cmap=cmap, divnorm=divnorm)
         plt.show()
         fig_name = ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}.png"
         fig.savefig(fig_name, transparent=True)

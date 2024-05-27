@@ -30,7 +30,7 @@ def colorbar(fig, scatter):
     cbar.ax.tick_params(labelsize=7, size=0)
 
 
-def feature_plot_2d(ch_names, ch_pos, ch_size, ch_color, cmap=None, divnorm=None):
+def feature_plot_2d(ch_names, ch_pos, ch_size, cmap=None, divnorm=None):
     """Plot scores for all pipelines and all datasets
 
     Parameters
@@ -69,7 +69,7 @@ def feature_plot_2d(ch_names, ch_pos, ch_size, ch_color, cmap=None, divnorm=None
         ch_pos[:, 0],
         ch_pos[:, 1],
         s=ch_size_,
-        c=ch_color,
+        c=ch_size,
         marker=".",
         cmap=cmap,
         norm=divnorm,

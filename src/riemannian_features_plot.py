@@ -5,8 +5,8 @@ import pandas as pd
 from collections import Counter
 
 from plottools.plot_positions import channel_pos
-from plottools.plot_tools import save_mat_file, normalize_channel_sizes
-from plottools.plot_features import feature_plot_2d
+from plottools.plot_tools import save_mat_file
+from plottools.plot_features import feature_plot_2d, normalize_channel_sizes
 from config import load_config, ConfigPath, DATASETS, EXCLUDE_CHANNELS
 
 
@@ -61,7 +61,7 @@ for dt in np.append(DATASETS, "all"):
     # Create 2D figure
     palette = params["colorbar"]["riemannian"]
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", palette)
-    fig, ax = feature_plot_2d(ch_names, ch_pos, ch_norm, ch_norm, cmap=cmap)
+    fig, ax = feature_plot_2d(ch_names, ch_pos, ch_norm, cmap=cmap)
     plt.show()
     fig_name = (
         ConfigPath.RES_DIR
