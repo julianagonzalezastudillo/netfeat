@@ -3,16 +3,16 @@
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.metrics import roc_auc_score
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 from sklearn.model_selection import (
     StratifiedKFold,
     train_test_split,
 )
 from itertools import compress
 from scipy import stats
-from ..moabb_settings import save_global
-import net_topo as net_topo
-from ..config import N_FEATURES, LATERALIZATION_METRIC
+from src.moabb_settings import save_global
+import networktools.net_topo as net_topo
+from src.config import N_FEATURES, LATERALIZATION_METRIC
 
 
 class NetSelection(TransformerMixin, BaseEstimator):
@@ -68,11 +68,12 @@ class NetSelection(TransformerMixin, BaseEstimator):
         montage_name=None,
         pipeline=None,
         cv_splits=None,
+        rank="t-test",  # "t-test" or "score"
     ):
         self.selection = None
         self.subelec_names = None
         self.t_val = None
-        self.rank = "score"  # "t-test" or "score"
+        self.rank = rank
         self.dataset = dataset
         self.name = name
         self.session = session
@@ -215,7 +216,7 @@ class NetSelection(TransformerMixin, BaseEstimator):
                 X_train, X_test, y_train, y_test = train_test_split(
                     X_channel, y, test_size=0.2, random_state=0, stratify=y
                 )
-                clf = SVC(kernel="linear")
+                clf = LinearSVC()
                 clf.fit(X_train, y_train)
                 score = roc_auc_score(y_test, clf.decision_function(X_test))
                 scores.append(score)
@@ -224,26 +225,26 @@ class NetSelection(TransformerMixin, BaseEstimator):
         # Generate lists of channel names and metric names based on self.metric
         ch_list = []
         metric_list = []
-        for metric in self.metric:
-            # Check if it's a lateralization metric
-            if metric in LATERALIZATION_METRIC:
-                # Selection get reduce to half of the channels because of redundancy
-                ch_pos = net_topo.positions_matrix(self.montage_name, self.ch_names)
-                rh_idx, lh_idx, _, _ = net_topo.channel_idx(self.ch_names, ch_pos)
-                ch_list += list(np.array(self.ch_names)[lh_idx])
-                metric_list += [metric] * len(lh_idx)
-            else:
-                ch_list += list(np.array(self.ch_names))
-                metric_list += [metric] * len(self.ch_names)
+        # for metric in self.metric:
+        # Check if it's a lateralization metric
+        if self.metric in LATERALIZATION_METRIC:
+            # Selection get reduce to half of the channels because of redundancy
+            ch_pos = net_topo.positions_matrix("standard_1005", self.ch_names)
+            rh_idx, lh_idx, _, _ = net_topo.channel_idx(self.ch_names, ch_pos)
+            ch_list += list(np.array(self.ch_names)[lh_idx])
+            metric_list += [self.metric] * len(lh_idx)
+        else:
+            ch_list += list(np.array(self.ch_names))
+            metric_list += [self.metric] * len(self.ch_names)
 
         # Create a list of tuples with t-test values, channel names, indices, and metric names
-        sort_selection = sorted(
+        sort_selection_ = sorted(
             zip(rank_param, ch_list, range(len(rank_param)), metric_list),
             key=lambda x: abs(x[0]),  # Sort by absolute value of the rank_param
             reverse=True,
         )
 
-        return sort_selection
+        return sort_selection_
 
     @staticmethod
     def _select_features(sort_selection, X_train_cv, X_val_cv, y_train_cv, y_val_cv):
@@ -278,7 +279,7 @@ class NetSelection(TransformerMixin, BaseEstimator):
         score = 0  # Initialize score variable
 
         # Include the feature/channel in the candidate set
-        for feature, i in zip(sort_selection, range(N_FEATURES)):
+        for feature, i in zip(sort_selection, range(len(sort_selection))):
             # candidate_mask = np.zeros(shape=np.shape(X_train_cv)[1], dtype=bool)
             candidate_mask[feature[2]] = True
 
@@ -297,6 +298,9 @@ class NetSelection(TransformerMixin, BaseEstimator):
             else:
                 candidate_mask[feature[2]] = False
 
+            if sum(features_mask) == np.shape(X_train_cv)[0]:
+                print(f"maximum number of features reached: {sum(features_mask)}")
+                break
         return features_mask
 
     @staticmethod
