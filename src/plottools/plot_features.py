@@ -12,10 +12,10 @@ def colorbar(fig, scatter):
 
     Parameters
     ----------
-        fig : matplotlib.fig
+    fig : matplotlib.fig
         The main axes object to which the colorbar will be attached.
 
-        scatter : matplotlib.pyplot.scatter
+    scatter : matplotlib.pyplot.scatter
         The scatter plot object for which the colorbar is being added.
 
     Returns
@@ -30,21 +30,28 @@ def colorbar(fig, scatter):
     cbar.ax.tick_params(labelsize=7, size=0)
 
 
-def feature_plot_2d(ch_names, ch_pos, ch_size, cmap=None, divnorm=None):
+def feature_plot_2d(ch_names, ch_pos, ch_size, cmap=None, divnorm=None, title=None):
     """Plot scores for all pipelines and all datasets
 
     Parameters
     ----------
     ch_names: list of str
         Names of the channels.
+
     ch_pos: array-like, shape (n_channels, 2)
         Positions of the channels in 2D.
+
     ch_size: array-like, shape (n_channels,)
         Sizes of the channels for the plot.
+
     cmap: Colormap, optional
         Colormap to use for the scatter plot. If None, a default colormap is used.
+
     divnorm: Normalize, optional
         Normalization for the color scale. If None, a default normalization is used.
+
+    title: str, optional
+        Title of the plot.
 
     Returns
     -------
@@ -99,7 +106,8 @@ def feature_plot_2d(ch_names, ch_pos, ch_size, cmap=None, divnorm=None):
     positions = channel_pos(ch_keys, dimension="2d")
     ax.set_xlim(min(positions[:, 0]), max(positions[:, 0]))
     ax.set_ylim(min(positions[:, 1]) * 1.1, max(positions[:, 1]) * 1.1)
-    # plt.title(f"{dts} {metric}")
+    if title:
+        plt.title(f"{title}")
 
     # Add colorbar
     colorbar(fig, thplot)
