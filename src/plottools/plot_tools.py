@@ -40,6 +40,9 @@ def save_mat_file(
     ch_name_idx : {array-like} of shape (n_channels)
         Vector with indexes of nodes names to be plotted.
 
+    min_zero : bool, optional
+        If True, set minimum value od the colorbar to zero. Default is False.
+
     Returns
     -------
     save .mat
