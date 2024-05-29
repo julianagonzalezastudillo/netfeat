@@ -70,17 +70,14 @@ for dt in np.append(DATASETS, "all"):
     fig.savefig(fig_name, transparent=True)
 
     # Get 3D layout and save
-    norm = plt.Normalize(vmin=0, vmax=max(abs(ch_norm)))
-    rgb_values = cmap(norm(ch_norm))
     ch_name_idx = np.argsort(-ch_norm)[:10]
 
     save_mat_file(
         ch_norm,
-        rgb_values,
+        palette,
         ch_names,
         f"riemannian_occurrences_{dt_code}",
-        palette,
-        names_idx=ch_name_idx,
+        ch_name_idx=ch_name_idx,
     )
 
     # Print ten channels with the highest values

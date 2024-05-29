@@ -77,8 +77,8 @@ for dt in df_t_test.dataset.unique():
     df_t_test.loc[df_t_test.dataset == dt, "nsub"] = nsubs
 
 # Define colors
-colors = params["colorbar"]["net"]
-cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
+palette = params["colorbar"]["net"]
+cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", palette)
 for name, metric in params["net_metrics"].items():
     # Filter by selected metric and create dict of channels and t-values
     df_metric = df_t_test[df_t_test["metric"] == metric]
@@ -144,11 +144,10 @@ for name, metric in params["net_metrics"].items():
 
         save_mat_file(
             ch_size,
-            rgb_values,
+            palette,
             ch_names,
             f"t_test_{metric}_{dts}",
-            colors,
-            names_idx=ch_name_idx,
+            ch_name_idx=ch_name_idx,
         )
 
         # Print significant channels
