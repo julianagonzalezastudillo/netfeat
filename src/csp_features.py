@@ -13,14 +13,12 @@ import gzip
 import numpy as np
 
 from mne.decoding import CSP
-from moabb.paradigms import LeftRightImagery
 from tools import suppress_stdout
 from config import load_config, ConfigPath, DATASETS
 
 
 # Load paremeters
-params = load_config()
-paradigm = LeftRightImagery(fmin=params["fmin"], fmax=params["fmax"])  # for rh vs lh
+params, paradigm = load_config()
 csp_component_order = params["csp_component_order"]
 
 for dt in DATASETS:
