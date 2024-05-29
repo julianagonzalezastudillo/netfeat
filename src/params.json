@@ -66,6 +66,17 @@
     "Weibo 2014": "standard_1020",
     "Zhou 2016": "standard_1020"
     },
+  "sessions": {
+    "001-2014": ["session_E", "session_T"],
+    "Cho2017": ["session_0"],
+    "Grosse-Wentrup 2009": ["session_0"],
+    "Lee2019_MI": ["session_1", "session_2"],
+    "Physionet Motor Imagery": ["session_0"],
+    "Schirrmeister2017": ["session_0"],
+    "Shin2017A": ["session_0", "session_2", "session_4"],
+    "Weibo 2014": ["session_0"],
+    "Zhou 2016": ["session_0", "session_1", "session_2"]
+  },
   "palette" : {
     "s+SVM": "#4253D6",
     "λ+SVM": "#FBE88F",
