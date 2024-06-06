@@ -15,7 +15,8 @@ params, paradigm = load_config()
 pipeline = "RG+SVM"
 
 # create dict with all the possible channels in all datasets
-ch_keys_all = np.unique(sum(params["ch_names"].values(), []))
+dt_ch_names = [params["ch_names"][dt.code] for dt in DATASETS]
+ch_keys_all = np.unique(sum(dt_ch_names, []))
 ch_count_all = dict.fromkeys(ch_keys_all, 0)
 
 for dt in np.append(DATASETS, "all"):
@@ -53,7 +54,7 @@ for dt in np.append(DATASETS, "all"):
     ch_names = ch_names[~np.isin(ch_names, EXCLUDE_CHANNELS)]
 
     # normalize by times it could have been selected == occurrences
-    ch_norm = normalize_channel_sizes(ch_count, dt, select_channels=ch_names)
+    ch_norm, ch_names_ = normalize_channel_sizes(ch_count, dt, select_channels=ch_names)
 
     # get electrodes positions
     ch_pos = channel_pos(ch_names, dimension="2d")
@@ -61,11 +62,11 @@ for dt in np.append(DATASETS, "all"):
     # Create 2D figure
     palette = params["colorbar"]["riemannian"]
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", palette)
-    fig, ax = feature_plot_2d(ch_names, ch_pos, ch_norm, cmap=cmap)
+    fig, ax = feature_plot_2d(ch_names_, ch_pos, ch_norm, cmap=cmap)
     plt.show()
     fig_name = (
         ConfigPath.RES_DIR
-        / f"riemannian_features/plot/riemannian_occurrences_{dt_code}.png"
+        / f"select_features/plot/riemannian_occurrences_{dt_code}.png"
     )
     fig.savefig(fig_name, transparent=True)
 
