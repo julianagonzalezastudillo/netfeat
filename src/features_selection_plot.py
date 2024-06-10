@@ -55,19 +55,18 @@ def load_features(pipe, dataset_name):
 # Load params
 params, paradigm = load_config()
 
-# create dict with all the possible channels in all datasets
+# Create dict with all the possible channels in all datasets
 dt_ch_names = [params["ch_names"][dt.code] for dt in DATASETS]
 ch_keys_all = np.unique(sum(dt_ch_names, []))
 
-pipelines = ["RG+SVM"]
-for name, metric in params["net_metrics"].items():
-    pipelines.append(f"{params['fc']}+{name}+SVM")
+# Prepare pipeline names
+pipelines = ["PSD+SVM", "RG+SVM"]
++[f"{params['fc']}+{name}+SVM" for name, metric in params["net_metrics"].items()]
 
 for pipeline in pipelines:
     palette = params["features_palette"][pipeline]
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", palette)
     ch_count_all = {ch_i: [] for ch_i in ch_keys_all}
-    # ch_count_all = dict.fromkeys(ch_keys_all, 0)
 
     for dt in np.append(DATASETS, "all"):
         if dt == "all":
@@ -81,31 +80,20 @@ for pipeline in pipelines:
             ch_norm = np.array(
                 [np.mean(values) for values in filtered_ch_count_all.values()]
             )
-            # ch_count = ch_count_all
-            # ch_names = np.array(list(ch_count.keys()), dtype=object)
         else:
-            # Initialize counters
-            ch_keys = params["ch_names"][dt.code]
-            ch_count = dict.fromkeys(ch_keys, 0)
-
-            # load selected features file
             dt_code = dt.code
+            ch_names = np.array(list(params["ch_names"][dt.code]), dtype=object)
+            ch_count = dict.fromkeys(ch_names, 0)
 
-            # all selected channels
+            # Load selected features from file
             ch = load_features(pipeline, dt_code)
 
-            # Count channels per dataset
+            # Update channel counts
             ch_count.update(
                 {ch_i: ch_count[ch_i] + Counter(ch)[ch_i] for ch_i in Counter(ch)}
             )
-            ch_names = np.array(list(ch_count.keys()), dtype=object)
 
-            # Count channels for all datasets
-            # ch_count_all.update(
-            #     {ch_i: ch_count_all[ch_i] + ch.count(ch_i) for ch_i in np.unique(ch)}
-            # )
-
-            # Exclude channels
+            # Exclude unwanted channels
             ch_names = ch_names[~np.isin(ch_names, EXCLUDE_CHANNELS)]
 
             # Normalize by times it could have been selected == occurrences
@@ -114,37 +102,40 @@ for pipeline in pipelines:
             )
 
             # Accumulate channels for all datasets
-            # normalize for each dataset
-            ch_norm_ = ch_norm / max(ch_norm)
             [
                 ch_count_all[ch_i].append(ch_norm[idx])
                 for idx, ch_i in enumerate(ch_names)
             ]
 
         print(f"{pipeline}: {dt_code}")
-        # get electrodes positions
-        ch_pos = channel_pos(ch_names, dimension="2d")
-
-        # Create 2D figure
-        fig, ax = feature_plot_2d(ch_names, ch_pos, ch_norm, cmap=cmap)
-        plt.show()
-        fig_name = f"occurrences_{pipeline}_{dt_code}"
-        fig.savefig(
-            ConfigPath.RES_DIR / f"select_features/plot/{fig_name}.png",
-            transparent=False,
-        )
 
         # Get 3D layout and save
         # Select channel names to plot
-        thresh = 0.6
-        n_select = 5 if metric in LATERALIZATION_METRIC else 10
-        if not np.any(np.abs(ch_norm) >= thresh):
-            thresh = abs(ch_norm[np.argsort(abs(ch_norm))[-5:]][0])
+        metric = pipeline.split("+")[-2]
+        n_select = 10  # default selection
+        if metric in params["net_metrics"]:
+            if params["net_metrics"][metric] in LATERALIZATION_METRIC:
+                n_select = 5
+            metric = params["net_metrics"][metric]
+
+        # if not np.any(np.abs(ch_norm) >= thresh):
+        thresh = abs(ch_norm[np.argsort(abs(ch_norm))[-n_select:]][0])
         ch_name_idx = np.where(np.abs(ch_norm) >= thresh)[0]
         ch_name_idx_sort = ch_name_idx[np.argsort(ch_norm[ch_name_idx])]
 
+        fig_name = f"occurrences_{metric}_{dt_code}"
         save_mat_file(
             ch_norm, palette, ch_names, fig_name, ch_name_idx=ch_name_idx, min_zero=True
+        )
+
+        # Create 2D figure
+        # Get electrodes positions
+        ch_pos = channel_pos(ch_names, dimension="2d")
+        fig, ax = feature_plot_2d(ch_names, ch_pos, ch_norm, cmap=cmap)
+        plt.show()
+        fig.savefig(
+            ConfigPath.RES_DIR / f"select_features/plot/{fig_name}.png",
+            transparent=False,
         )
 
         # Print ten channels with the highest values
