@@ -13,6 +13,7 @@ from scipy import stats
 from src.moabb_settings import save_global
 import networktools.net_topo as net_topo
 from src.config import N_FEATURES, LATERALIZATION_METRIC
+import traceback
 
 
 class NetSelection(TransformerMixin, BaseEstimator):
@@ -107,17 +108,8 @@ class NetSelection(TransformerMixin, BaseEstimator):
         self.subelec_names = [row[1] for row in self.selection]
         self.t_val = [row[0] for row in self.selection]
 
-        # For testing network metrics fusion
-        original_metric = self.metric
-        if self.pipeline is "fusion+SVM":
-            self.metric = [row[3] for row in self.selection]
-
         # Save cross validation selected features
         save_global(self)
-
-        # Restore the original metric attribute
-        self.metric = original_metric
-
         return self
 
     def transform(self, X_cv):
@@ -136,7 +128,6 @@ class NetSelection(TransformerMixin, BaseEstimator):
         selec_idx = [row[2] for row in self.selection]
 
         X_selec = X_cv[:, selec_idx]
-        # print('cv: {0}, ch: {1}, size: {2}'.format(n_cv, [row[1] for row in self.selection], np.shape(X_selec)))
         return X_selec
 
     def _get_selection(self, X, y):
@@ -169,12 +160,10 @@ class NetSelection(TransformerMixin, BaseEstimator):
             X_train_cv, X_val_cv = X_train[train_cv_idx], X_train[val_cv_idx]
             y_train_cv, y_val_cv = y_train[train_cv_idx], y_train[val_cv_idx]
 
-            # Rank features
             sort_selection = self._rank_features(X_train_cv, y_train_cv)
             features_mask = self._select_features(
                 sort_selection, X_train_cv, X_val_cv, y_train_cv, y_val_cv
             )
-
             # Extend the list of best_features with selected features of this fold
             best_features.extend(list(compress(sort_selection, features_mask)))
 
@@ -197,53 +186,59 @@ class NetSelection(TransformerMixin, BaseEstimator):
             Sorted list of features based on their discriminative power,
             containing tuples of (t-test value, channel name, index, metric name).
         """
-        if self.rank == "t-test":
-            # Separate data into two classes based on labels
-            class1 = X[y == np.unique(y)[0]]
-            class2 = X[y == np.unique(y)[1]]
+        try:
+            if self.rank == "t-test":
+                # Separate data into two classes based on labels
+                class1 = X[y == np.unique(y)[0]]
+                class2 = X[y == np.unique(y)[1]]
 
-            # Calculate t-test values for each feature
-            rank_param = stats.ttest_ind(class1, class2, equal_var=False)[0]
+                # Calculate t-test values for each feature
+                rank_param = stats.ttest_ind(class1, class2, equal_var=False)[0]
 
-        elif self.rank == "score":
-            # Oder by individual classification performance
-            scores = []
-            for channel_idx in range(np.shape(X)[1]):
-                # Select data corresponding to the current channel
-                X_channel = X[:, channel_idx].reshape(-1, 1)
+            elif self.rank == "score":
+                # Oder by individual classification performance
+                scores = []
+                for channel_idx in range(np.shape(X)[1]):
+                    # Select data corresponding to the current channel
+                    X_channel = X[:, channel_idx].reshape(-1, 1)
 
-                # Split, train and test
-                X_train, X_test, y_train, y_test = train_test_split(
-                    X_channel, y, test_size=0.2, random_state=0, stratify=y
-                )
-                clf = LinearSVC()
-                clf.fit(X_train, y_train)
-                score = roc_auc_score(y_test, clf.decision_function(X_test))
-                scores.append(score)
-            rank_param = scores
+                    # Split, train and test
+                    X_train, X_test, y_train, y_test = train_test_split(
+                        X_channel, y, test_size=0.2, random_state=0, stratify=y
+                    )
+                    clf_rank = SVC(kernel="linear")
+                    clf_rank.fit(X_train, y_train)
+                    score = roc_auc_score(y_test, clf_rank.decision_function(X_test))
+                    scores.append(score)
+                rank_param = scores
 
-        # Generate lists of channel names and metric names based on self.metric
-        ch_list = []
-        metric_list = []
-        # for metric in self.metric:
-        # Check if it's a lateralization metric
-        if self.metric in LATERALIZATION_METRIC:
-            # Selection get reduce to half of the channels because of redundancy
-            ch_pos = net_topo.positions_matrix("standard_1005", self.ch_names)
-            rh_idx, lh_idx, _, _ = net_topo.channel_idx(self.ch_names, ch_pos)
-            ch_list += list(np.array(self.ch_names)[lh_idx])
-            metric_list += [self.metric] * len(lh_idx)
-        else:
-            ch_list += list(np.array(self.ch_names))
-            metric_list += [self.metric] * len(self.ch_names)
+            # Generate lists of channel names and metric names based on self.metric
+            ch_list = []
+            metric_list = []
+            # for metric in self.metric:
+            # Check if it's a lateralization metric
+            if self.metric in LATERALIZATION_METRIC:
+                # Selection get reduce to half of the channels because of redundancy
+                if self.dataset.code == "Grosse-Wentrup 2009":
+                    rh_idx, lh_idx, ch_idx, ch_bis_idx = net_topo.channel_idx_MunichMI()
+                else:
+                    ch_pos = net_topo.positions_matrix("standard_1005", self.ch_names)
+                    rh_idx, lh_idx, _, _ = net_topo.channel_idx(self.ch_names, ch_pos)
+                ch_list += list(np.array(self.ch_names)[lh_idx])
+                metric_list += [self.metric] * len(lh_idx)
+            else:
+                ch_list += list(np.array(self.ch_names))
+                metric_list += [self.metric] * len(self.ch_names)
 
-        # Create a list of tuples with t-test values, channel names, indices, and metric names
-        sort_selection_ = sorted(
-            zip(rank_param, ch_list, range(len(rank_param)), metric_list),
-            key=lambda x: abs(x[0]),  # Sort by absolute value of the rank_param
-            reverse=True,
-        )
-
+            # Create a list of tuples with t-test values, channel names, indices, and metric names
+            sort_selection_ = sorted(
+                zip(rank_param, ch_list, range(len(rank_param)), metric_list),
+                key=lambda x: abs(x[0]),  # Sort by absolute value of the rank_param
+                reverse=True,
+            )
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            traceback.print_exc()
         return sort_selection_
 
     @staticmethod
