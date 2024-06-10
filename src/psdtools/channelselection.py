@@ -15,20 +15,7 @@ from src.config import N_FEATURES
 
 
 class PSDSelection(TransformerMixin, BaseEstimator):
-    """Feature selection for network properties.
-
-    We implemented an embedded approach to select the best discriminant features. We use a sequential forward feature
-    selection. Within a nested cross-validation framework, this algorithm adds features to form a feature subset. To
-    limit the research complexity, at each stage we rank our features from the training folds according to their
-    discrimination power (t-test or classification score). Then we perform a bottom up search procedure which
-    conditionally includes new features to the selected set based on the cross-validation score.
-
-    Within a cross-validation framework, this approach uses a nested 5-fold cross-validated SVM on a sub-training set
-    (80% of the original cv training) [1], to obtain a subset of selected features, N′ = 10. For each nested cv
-    iteration, features are ranked according to their discriminant power between classes. In a forward sequential order,
-    a feature is going to be retained and accumulated in the selected set, if its accuracy is higher than the previous
-    set. The output of this nested cv is a group of 10 selected features on which the original cv validation set is
-    going to be tested. This is repeated for each iteration in the original CV.
+    """Feature selection for PSD .
 
     Parameters
         ----------
