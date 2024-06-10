@@ -3,7 +3,7 @@
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.metrics import roc_auc_score
-from sklearn.svm import SVC, LinearSVC
+from sklearn.svm import SVC
 from sklearn.model_selection import (
     StratifiedKFold,
     train_test_split,
@@ -12,11 +12,11 @@ from itertools import compress
 from scipy import stats
 from src.moabb_settings import save_global
 import networktools.net_topo as net_topo
-from src.config import N_FEATURES, LATERALIZATION_METRIC
+from src.config import LATERALIZATION_METRIC
 import traceback
 
 
-class NetSelection(TransformerMixin, BaseEstimator):
+class FeaturesSelection(TransformerMixin, BaseEstimator):
     """Feature selection for network properties.
 
     We implemented an embedded approach to select the best discriminant features. We use a sequential forward feature

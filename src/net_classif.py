@@ -12,7 +12,7 @@ import moabb
 from netfeat_pipeline import WithinSessionEvaluation_netfeat
 from networktools.fc import FunctionalConnectivity
 from networktools.net import NetMetric
-from networktools.channelselection import NetSelection
+from preprocessing.channelselection import FeaturesSelection
 from config import load_config, ConfigPath, DATASETS
 
 
@@ -26,7 +26,7 @@ for name, metric in params["net_metrics"].items():
             method=params["fc"], fmin=params["fmin"], fmax=params["fmax"]
         ),
         NetMetric(method=metric),
-        NetSelection(),
+        FeaturesSelection(rank="t-test"),
         SVC(kernel="linear"),
     )
 
@@ -40,5 +40,5 @@ for dt in DATASETS:
     )
     results = cross_val.process(pipeline)
     results.to_csv(
-        ConfigPath.RES_CLASSIFY_DIR / f"{dt.code}_rh_lh_net.csv", index=False
+        ConfigPath.RES_CLASSIFY_DIR / f"{dt.code}_rh_lh_net_t-test.csv", index=False
     )
