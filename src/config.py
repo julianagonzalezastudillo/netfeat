@@ -19,12 +19,12 @@ from moabb.datasets import (
 P_VAL = 0.05
 N_FEATURES = 10
 LATERALIZATION_METRIC = ["local_laterality", "segregation", "integration"]
-EXCLUDE_CHANNELS = ["F9", "F10", "FT9", "FT10", "M1", "M2"]
+EXCLUDE_CHANNELS = ["F9", "F10", "FT9", "FT10", "M1", "M2", "TTP7h", "TPP8h"]
 DATASETS = [
     BNCI2014001(),
     Cho2017(),
     Lee2019_MI(),
-    # MunichMI(),
+    MunichMI(),
     PhysionetMI(),
     Shin2017A(accept=True),
     Schirrmeister2017(),
