@@ -6,6 +6,7 @@
 """
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
 
 import moabb
 
@@ -26,6 +27,7 @@ for name, metric in params["net_metrics"].items():
             method=params["fc"], fmin=params["fmin"], fmax=params["fmax"]
         ),
         NetMetric(method=metric),
+        StandardScaler(),
         FeaturesSelection(rank="t-test"),
         SVC(kernel="linear"),
     )
