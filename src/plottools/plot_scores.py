@@ -119,7 +119,7 @@ def score_plot(data, pipelines=None):
     ax.set_xlim([0, 1])
     ax.axvline(0.5, linestyle="--", color="k", linewidth=2)
     ax.axvline(0.7, linestyle="--", color="grey", linewidth=2)
-    ax.set_title("Scores per dataset and algorithm")
+    # ax.set_title("Scores per dataset and algorithm", fontname="Arial")
     handles, labels = ax.get_legend_handles_labels()
     color_dict = {lb: h.get_facecolor()[0] for lb, h in zip(labels, handles)}
     # ax.legend(labels[0:int(len(labels)/2)])
@@ -127,8 +127,12 @@ def score_plot(data, pipelines=None):
     ax.legend(
         handles[len(np.unique(data.pipeline)) : end],
         labels[len(np.unique(data.pipeline)) : end],
+        prop={"family": "Arial"},
     )
-    # ax.get_legend().remove()
+    plt.setp(ax.get_xticklabels(), fontname="Arial")
+    plt.setp(ax.get_yticklabels(), fontname="Arial")
+    ax.set_ylabel("")
+    ax.set_xlabel("score", fontname="Arial")
     plt.tight_layout()
     return fig, ax
 
@@ -231,7 +235,7 @@ def meta_analysis_plot(
     # pvalues axis stuf
     pval_ax.set_xlim([-0.1, 0.1])
     pval_ax.grid(False)
-    pval_ax.set_title("p-value", fontdict={"fontsize": 10})
+    pval_ax.set_title("p-value", fontdict={"fontsize": 10, "fontname": "Arial"})
     pval_ax.set_xticks([])
     for spine in pval_ax.spines.values():
         spine.set_visible(False)
@@ -243,6 +247,7 @@ def meta_analysis_plot(
             verticalalignment="center",
             s="{:.2e}".format(p),
             fontsize=8,
+            fontname="Arial",
         )
     if final_effect > 0:
         p = combine_pvalues(df_fw["p"], df_fw["nsub"])
@@ -256,6 +261,7 @@ def meta_analysis_plot(
                 verticalalignment="center",
                 s="{:.2e}".format(p),
                 fontsize=8,
+                fontname="Arial",
             )
     else:
         p = combine_pvalues(df_bk["p"], df_bk["nsub"])
@@ -269,6 +275,7 @@ def meta_analysis_plot(
                 verticalalignment="center",
                 s="{:.2e}".format(p),
                 fontsize=8,
+                fontname="Arial",
             )
 
     ax.grid(False)
@@ -283,8 +290,10 @@ def meta_analysis_plot(
     space1 = " " * (45 - len(alg1_name))
     space2 = " " * (45 - len(alg2_name))
     title = f"< {alg2_name} better{space2}\n{space1}{alg1_name} better >"
-    ax.set_title(title, ha="left", ma="right", loc="left")
-    ax.set_xlabel("Standardized Mean Difference")
+    ax.set_title(title, ha="left", ma="right", loc="left", fontname="Arial")
+    ax.set_xlabel("Standardized Mean Difference", fontname="Arial")
+    plt.setp(ax.get_xticklabels(), fontname="Arial")
+    plt.setp(ax.get_yticklabels(), fontname="Arial")
     fig.tight_layout()
 
     return fig, ax
