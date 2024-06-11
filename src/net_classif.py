@@ -19,6 +19,7 @@ from config import load_config, ConfigPath, DATASETS
 
 moabb.set_log_level("info")
 params, paradigm = load_config()
+rank = "t-test"
 
 pipeline = {}
 for name, metric in params["net_metrics"].items():
@@ -28,12 +29,11 @@ for name, metric in params["net_metrics"].items():
         ),
         NetMetric(method=metric),
         StandardScaler(),
-        FeaturesSelection(rank="t-test"),
+        FeaturesSelection(rank=rank),
         SVC(kernel="linear"),
     )
 
 for dt in DATASETS:
-    dt.montage = params["montage"][dt.code]
     cross_val = WithinSessionEvaluation_netfeat(
         datasets=[dt],
         paradigm=paradigm,
@@ -42,5 +42,5 @@ for dt in DATASETS:
     )
     results = cross_val.process(pipeline)
     results.to_csv(
-        ConfigPath.RES_CLASSIFY_DIR / f"{dt.code}_rh_lh_net_t-test.csv", index=False
+        ConfigPath.RES_CLASSIFY_DIR / f"{dt.code}_rh_lh_net_{rank}.csv", index=False
     )

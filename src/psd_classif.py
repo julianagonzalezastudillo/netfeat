@@ -22,6 +22,7 @@ from config import load_config, ConfigPath, DATASETS
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
 params, paradigm = load_config()
+rank = "t-test"
 
 pipeline = {
     "PSD+SVM": make_pipeline(
@@ -30,13 +31,12 @@ pipeline = {
             fmax=params["fmax"],
         ),
         StandardScaler(),
-        FeaturesSelection(rank="score", metric="psd"),
+        FeaturesSelection(rank=rank, metric="psd"),
         SVC(kernel="linear"),
     )
 }
 
 for dt in DATASETS:
-    dt.montage = params["montage"][dt.code]
     cross_val = WithinSessionEvaluation_netfeat(
         datasets=[dt],
         paradigm=paradigm,
@@ -46,6 +46,6 @@ for dt in DATASETS:
     results = cross_val.process(pipeline)
 
     results.to_csv(
-        ConfigPath.RES_CLASSIFY_DIR / f"{dt.code}_rh_lh_psd_score.csv", index=False
+        ConfigPath.RES_CLASSIFY_DIR / f"{dt.code}_rh_lh_psd_{rank}.csv", index=False
     )
     print(np.mean(results["score"]))
