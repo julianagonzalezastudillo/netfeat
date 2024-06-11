@@ -27,7 +27,7 @@ def format_mean_std(group):
 
 
 # Define constants
-PIPELINES = ["net", "csp", "riemannian", "psd_"]
+PIPELINES = ["net_t-test", "csp", "riemannian", "psd_t-test"]
 params, paradigm = load_config()
 
 # Load results

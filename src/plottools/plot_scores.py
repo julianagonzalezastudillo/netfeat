@@ -72,7 +72,7 @@ def score_plot(data, pipelines=None):
         hue="pipeline",
         dodge=True,
         ax=ax,
-        alpha=0.35,
+        alpha=0.2,
         marker=my_marker,
         s=22,
     )
@@ -90,6 +90,7 @@ def score_plot(data, pipelines=None):
         ],
         dodge=True,
         ax=ax,
+        alpha=0.85,
         marker=my_marker,
         s=35,
         edgecolors="k",
