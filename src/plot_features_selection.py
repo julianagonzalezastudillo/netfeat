@@ -60,8 +60,9 @@ dt_ch_names = [params["ch_names"][dt.code] for dt in DATASETS]
 ch_keys_all = np.unique(sum(dt_ch_names, []))
 
 # Prepare pipeline names
-pipelines = ["PSD+SVM", "RG+SVM"]
-+[f"{params['fc']}+{name}+SVM" for name, metric in params["net_metrics"].items()]
+pipelines = ["PSD+SVM", "RG+SVM"] + [
+    f"{params['fc']}+{name}+SVM" for name, metric in params["net_metrics"].items()
+]
 
 for pipeline in pipelines:
     palette = params["features_palette"][pipeline]
