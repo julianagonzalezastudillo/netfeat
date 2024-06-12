@@ -18,9 +18,13 @@ import networktools.net_topo as net_topo
 
 params, paradigm = load_config()
 
+# Methods
+methods = {metric: "netmetric" for name, metric in params["net_metrics"].items()}
+methods["psdwelch"] = "psdwelch"
+
 # Initialize data containers
 df_list = []
-for name, metric in params["net_metrics"].items():
+for metric, method in methods.items():
     ch_keys = np.unique(sum(params["ch_names"].values(), []))
     ch_values = np.zeros(len(ch_keys))
     ch_dict_t_val = dict(zip(ch_keys, ch_values))
@@ -41,8 +45,8 @@ for name, metric in params["net_metrics"].items():
 
             # Get subject network metric data
             file_name = (
-                ConfigPath.RES_NET
-                / f"netmetric_{dataset.code}_{str(subject).zfill(3)}_{'-'.join(list(info['event_id']))}_{metric}.gz"
+                ConfigPath.RES_DIR
+                / f"{method}/{method}_{dataset.code}_{str(subject).zfill(3)}_{'-'.join(list(info['event_id']))}_{metric}.gz"
             )
             with gzip.open(file_name, "r") as f:
                 Xnet = pickle.load(f)
@@ -100,4 +104,4 @@ for name, metric in params["net_metrics"].items():
 df_t_test = pd.concat(df_list, ignore_index=True)
 
 # Save the results to a CSV file
-df_t_test.to_csv(ConfigPath.RES_CLASSIFY_DIR / "stats/net_t_test.csv", index=False)
+df_t_test.to_csv(ConfigPath.RES_DIR / "stats/t_test.csv", index=False)
