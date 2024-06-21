@@ -28,7 +28,7 @@ from moabb_settings import add_attributes
 import save_features
 import logging
 from tqdm.auto import tqdm
-from config import ConfigPath, LATERALIZATION_METRIC
+from config import ConfigPath
 
 
 log = logging.getLogger(__name__)
@@ -52,7 +52,6 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
         )
 
         for subject in tqdm(dataset.subject_list, desc=f"{dataset.code}-WithinSession"):
-            # if subject in [7]:
             print(" ")  # to avoid writing log in the same line as tqdm
             run_pipes = self.results.not_yet_computed(pipelines, dataset, subject)
             if len(run_pipes) == 0:
@@ -168,29 +167,33 @@ class WithinSessionEvaluation_netfeat(BaseEvaluation):
         clf = deepcopy(clf_preproc)
         content = [clf.steps[i][0] for i in range(len(clf.steps))]
 
-        for estimator in ["functionalconnectivity", "netmetric"]:
+        for estimator in ["psdwelch", "functionalconnectivity", "netmetric"]:
             if estimator in content:
-                method = clf[estimator].method
+                method = (
+                    clf[estimator].method
+                    if hasattr(clf[estimator], "method")
+                    else estimator
+                )
                 subject = clf.named_steps[estimator].subject
                 dataset = clf.named_steps[estimator].dataset
 
                 file_name = f"{estimator}_{dataset.code}_{str(subject).zfill(3)}_{'-'.join(list(X.event_id))}_{method}.gz"
-                fc_file = ConfigPath.RES_DIR / estimator / file_name
-                if os.path.exists(fc_file):
-                    # print("Loading {0} ...".format(estimator))
-                    # load
-                    with gzip.open(fc_file, "r") as f:
-                        Xfc = pickle.load(f)
-                    X._data = Xfc[method]
+                file_path = ConfigPath.RES_DIR / estimator
+                file = file_path / file_name
+                if os.path.exists(file):
+                    # Load data
+                    with gzip.open(file, "r") as f:
+                        data = pickle.load(f)
+                    X._data = data[method]
                 else:
-                    # print("Computing {0} ...".format(estimator))
+                    # Compute estimator
                     preproc = clone(clf.named_steps[estimator])
-                    # compute estimator
                     X._data = preproc.transform(X=X)
-                    # save
-                    with gzip.open(fc_file, "w") as f:  # save
-                        Xfc = {method: X._data}
-                        pickle.dump(Xfc, f)
+                    # Save
+                    file_path.mkdir(parents=True, exist_ok=True)
+                    with gzip.open(file, "w") as f:  # save
+                        data = {method: X._data}
+                        pickle.dump(data, f)
                 step_index = [
                     i for i, (name, _) in enumerate(clf.steps) if name == estimator
                 ][0]
