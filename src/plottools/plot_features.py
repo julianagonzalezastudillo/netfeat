@@ -30,25 +30,22 @@ def colorbar(fig, scatter):
     cbar.ax.tick_params(labelsize=7, size=0)
 
 
-def feature_plot_2d(ch_names, ch_pos, ch_size, cmap=None, divnorm=None, title=None):
+def feature_plot_2d(ch_size, ch_names, palette=None, title=None, min_zero=True):
     """Plot scores for all pipelines and all datasets
 
     Parameters
     ----------
-    ch_names: list of str
-        Names of the channels.
-
-    ch_pos: array-like, shape (n_channels, 2)
-        Positions of the channels in 2D.
-
     ch_size: array-like, shape (n_channels,)
         Sizes of the channels for the plot.
 
-    cmap: Colormap, optional
-        Colormap to use for the scatter plot. If None, a default colormap is used.
+    ch_names: list of str
+        Channel names.
 
-    divnorm: Normalize, optional
-        Normalization for the color scale. If None, a default normalization is used.
+    palette : list  of shape (n_colors, 2)
+        Each row has the color position in the colorbar and the color code in hex.
+
+    min_zero : bool, optional
+        If True, set minimum value of the colorbar to zero. Default is False.
 
     title: str, optional
         Title of the plot.
@@ -65,9 +62,21 @@ def feature_plot_2d(ch_names, ch_pos, ch_size, cmap=None, divnorm=None, title=No
     dpi = 300
     fig, ax = plt.subplots(figsize=(7, 5), dpi=dpi)
 
-    if cmap is None:
-        colors = [[0, "#e1e8ed"], [1.0, "#EC6D5C"]]
-        cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
+    # Create colormap
+    colors = [[0, "#e1e8ed"], [1.0, "#EC6D5C"]] if palette is None else palette
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
+
+    # Set norm values
+    if min(ch_size) < 0:
+        vmin = -max(abs(ch_size))
+    elif min_zero:
+        vmin = 0
+    else:
+        vmin = min(ch_size)
+    norm = plt.Normalize(vmin=vmin, vmax=max(abs(ch_size)))
+
+    # Find 3D position for each channel
+    ch_pos = channel_pos(ch_names, dimension="2d")
 
     ch_size_ = (
         abs(ch_size / max(abs(ch_size))) * dpi / 6
@@ -79,7 +88,7 @@ def feature_plot_2d(ch_names, ch_pos, ch_size, cmap=None, divnorm=None, title=No
         c=ch_size,
         marker=".",
         cmap=cmap,
-        norm=divnorm,
+        norm=norm,
         alpha=1,
         linewidths=0,
         edgecolors="k",
@@ -184,4 +193,4 @@ def normalize_channel_sizes(count, dataset, select_channels=None):
     ch_size_norm = np.array(
         [count[c] / ch_total[c] if ch_total[c] != 0 else 0 for c in channels]
     )
-    return ch_size_norm
+    return ch_size_norm, channels

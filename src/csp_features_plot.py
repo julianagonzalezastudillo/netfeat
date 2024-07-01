@@ -1,14 +1,17 @@
+"""
+=================================
+            NETFEAT
+=================================
+
+"""
 import pickle
 import gzip
-
-import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
 
 import warnings
 import moabb
 
-from plottools.plot_positions import channel_pos
 from plottools.plot_features import feature_plot_2d
 from plottools.plot_tools import save_mat_file
 
@@ -26,7 +29,6 @@ mi_class = {"rh": 0, "lh": 1}
 
 # plot params
 palette = params["colorbar"]["csp"]
-cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", palette)
 
 for csp_f_p in ["filters", "patterns"]:
     for class_name in ["rh", "lh"]:
@@ -86,16 +88,13 @@ for csp_f_p in ["filters", "patterns"]:
             ch_dict = {k: v if not np.isnan(v) else 0 for k, v in ch_dict.items()}
             ch_size = np.fromiter(ch_dict.values(), dtype=float)  # to array
             ch_name = list(ch_dict.keys())
-            ch_pos = channel_pos(ch_name)
 
             # Plot 2D and save
-            # vmax, vmin = (0.5, 0.06) if csp_f_p == "patterns" else (0.45, 0.1)
-            # norm = plt.Normalize(vmin=vmin, vmax=vmax)
             title = f"{csp_f_p} {class_name} "
-            fig, ax = feature_plot_2d(ch_name, ch_pos, ch_size, cmap=cmap, title=title)
+            fig, ax = feature_plot_2d(ch_size, ch_name, palette=palette, title=title)
             plt.show()
-            fig_name = f"csp_{csp_f_p}_mean_{class_name}.png"
-            fig.savefig(ConfigPath.RES_CSP / f"plot/{fig_name}", transparent=True)
+            fig_name = f"csp_{csp_f_p}_mean_{class_name}_{dt_name}"
+            # fig.savefig(ConfigPath.RES_CSP / f"plot/{fig_name}.png", transparent=True)
 
             # Get 3D layout and save
             ch_name_idx = np.argsort(-ch_size)[:10]
@@ -105,6 +104,7 @@ for csp_f_p in ["filters", "patterns"]:
                 np.array(ch_name, dtype=object),
                 fig_name,
                 ch_name_idx=ch_name_idx,
+                min_zero=True,
             )
 
             # print 10 highest values channels

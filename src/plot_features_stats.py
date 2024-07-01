@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import matplotlib.colors
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
@@ -90,7 +89,6 @@ for metric, method in methods.items():
         if method == "netmetric"
         else None
     )
-    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", palette)
 
     print("*" * 100)
     # for each dataset or all datasets together
@@ -107,9 +105,8 @@ for metric, method in methods.items():
         xlim_max = max(positions[:, 0])
         ch_names = ch_names[~np.isin(ch_names, EXCLUDE_CHANNELS)]
 
-        # Assign position to each node
+        # Get mean channel size
         ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
-        ch_pos = np.array([pos[ch] for ch in ch_names])
 
         # Threshold for node names (p-val < 0.05)
         n_subjects = 0
@@ -121,30 +118,24 @@ for metric, method in methods.items():
         if not np.any(np.abs(ch_size) >= thresh):
             thresh = abs(ch_size[np.argsort(abs(ch_size))[-10:]][0])
 
-        # Define node size and max
-        ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
-
         # Plot t-values
-        divnorm = matplotlib.colors.TwoSlopeNorm(
-            vmin=-max(abs(ch_size)), vcenter=0.0, vmax=max(abs(ch_size))
-        )
-        fig, ax = feature_plot_2d(ch_names, ch_pos, ch_size, cmap=cmap, norm=divnorm)
+        fig, ax = feature_plot_2d(ch_size, ch_names, palette=palette)
         plt.show()
         fig_name = ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}.png"
-        fig.savefig(fig_name, transparent=True)
+        # fig.savefig(fig_name, transparent=True)
 
         # Get 3D layout and save
         # Select channel names to plot
         ch_name_idx = np.where(np.abs(ch_size) >= thresh)[0]
         ch_name_idx_sort = ch_name_idx[np.argsort(ch_size[ch_name_idx])]
 
-        save_mat_file(
-            ch_size,
-            palette,
-            ch_names,
-            f"t_test_{metric}_{dts}",
-            ch_name_idx=ch_name_idx,
-        )
+        # save_mat_file(
+        #     ch_size,
+        #     palette,
+        #     ch_names,
+        #     f"t_test_{metric}_{dts}",
+        #     ch_name_idx=ch_name_idx,
+        # )
 
         # Print significant channels
         print(f"significant t-val: {ch_names[ch_name_idx_sort]}")

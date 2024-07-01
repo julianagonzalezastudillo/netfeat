@@ -1,10 +1,8 @@
 import matplotlib.pyplot as plt
-import matplotlib.colors
 import numpy as np
 import pandas as pd
 from collections import Counter
 
-from plottools.plot_positions import channel_pos
 from plottools.plot_tools import save_mat_file
 from plottools.plot_features import feature_plot_2d, normalize_channel_sizes
 from config import (
@@ -66,7 +64,6 @@ pipelines = ["PSD+SVM", "RG+SVM"] + [
 
 for pipeline in pipelines:
     palette = params["features_palette"][pipeline]
-    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", palette)
     ch_count_all = {ch_i: [] for ch_i in ch_keys_all}
 
     for dt in np.append(DATASETS, "all"):
@@ -131,8 +128,7 @@ for pipeline in pipelines:
 
         # Create 2D figure
         # Get electrodes positions
-        ch_pos = channel_pos(ch_names, dimension="2d")
-        fig, ax = feature_plot_2d(ch_names, ch_pos, ch_norm, cmap=cmap)
+        fig, ax = feature_plot_2d(ch_norm, ch_names, palette=palette)
         plt.show()
         fig.savefig(
             ConfigPath.RES_DIR / f"select_features/plot/{fig_name}.png",
