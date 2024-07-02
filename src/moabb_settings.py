@@ -16,6 +16,12 @@ def add_attributes(obj, **kwargs):
 
 
 def save_global(params):
+    """
+    This function saves the selected features for a given dataset, subject,
+    session, pipeline, and metric. It also handles the cross-validation process
+    and saves the results to a CSV file once all subjects, cross-validation splits,
+    and sessions have been processed.
+    """
     if params.t_val:
         params.t_val = [round(val, 2) for val in params.t_val]
     selec = {
@@ -28,7 +34,7 @@ def save_global(params):
         "ch": params.subelec_names,
         "t-val": params.t_val,
     }
-    # save_features.df_select = save_features.df_select.append(selec, ignore_index=True)
+
     # Convert selec to a DataFrame
     selec_df = pd.DataFrame([selec])
 
@@ -37,6 +43,7 @@ def save_global(params):
         [save_features.df_select, selec_df], ignore_index=True
     )
 
+    # Check if all subjects, cross-validation splits, and sessions have been processed
     if (
         int(params.dataset.sub) == params.dataset.subject_list[-1]
         and save_features.n_cv == params.cv_splits
@@ -46,6 +53,7 @@ def save_global(params):
             (save_features.df_select["dataset"] == params.dataset.code)
             & (save_features.df_select["pipeline"] == params.pipeline)
         ]
+        # Save the selected features to a CSV file
         df_save.to_csv(
             ConfigPath.RES_DIR
             / f"select_features/select_features_{params.dataset.code}_{params.pipeline}.csv",
@@ -58,6 +66,8 @@ def create_info_file(dataset, subject, paradigm):
     """
     Create info file with subject information in order to fasten when loading information.
     """
+
+    # Define the path to save the info files
     info_path = ConfigPath.RES_DIR / "info"
     info_path.mkdir(parents=True, exist_ok=True)
 
