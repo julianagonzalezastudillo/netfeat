@@ -1,10 +1,12 @@
 """
 =================================
-            NETFEAT
+5. NETFEAT - Feature stats
 =================================
+
 Features study: This script performs statistical analysis on network metrics across all datasets and subjects.
 Identify significant differences in network properties between classes using a two-sample t-test.
 """
+
 import gzip
 import numpy as np
 import pandas as pd
