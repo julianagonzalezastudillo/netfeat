@@ -17,7 +17,7 @@ import traceback
 
 
 class FeaturesSelection(TransformerMixin, BaseEstimator):
-    """Feature selection for network properties.
+    """Feature selection for network properties and PSD.
 
     We implemented an embedded approach to select the best discriminant features. We use a sequential forward feature
     selection. Within a nested cross-validation framework, this algorithm adds features to form a feature subset. To
@@ -26,31 +26,41 @@ class FeaturesSelection(TransformerMixin, BaseEstimator):
     conditionally includes new features to the selected set based on the cross-validation score.
 
     Within a cross-validation framework, this approach uses a nested 5-fold cross-validated SVM on a sub-training set
-    (80% of the original cv training) [1], to obtain a subset of selected features, N′ = 10. For each nested cv
-    iteration, features are ranked according to their discriminant power between classes. In a forward sequential order,
-    a feature is going to be retained and accumulated in the selected set, if its accuracy is higher than the previous
-    set. The output of this nested cv is a group of 10 selected features on which the original cv validation set is
-    going to be tested. This is repeated for each iteration in the original CV.
+    (80% of the original cv training) [1], to obtain a subset of selected features. This process continued until the
+    score ceased to increase or until the maximum number of features, equivalent to the number of samples, was reached
+    For each nested cv iteration, features are ranked according to their discriminant power between classes. In a
+    forward sequential order, a feature is going to be retained and accumulated in the selected set, if its accuracy is
+    higher than the previous set. The output of this nested cv is a group of N* selected features on which the original
+    cv validation set is going to be tested. This is repeated for each iteration in the original CV.
 
     Parameters
         ----------
         dataset : List of Dataset instance
+
         name : str or None, default=None
             Name of the model.
+
         session : int or None, default=None
             Session number.
+
         sessions_name : list or None, default=None
             Session name.
+
         metric : str or None, default=None
             Nework metric name.
+
         ch_names : list or None, default=None
             List of channel names.
+
         montage_name : str or None, default=None
             Montage name.
+
         pipeline : str or None, default=None
             Pipeline name.
+
         cv_splits : int or None, default=None
             Number of cross-validation splits.
+
     References
     ----------
 
@@ -307,6 +317,7 @@ class FeaturesSelection(TransformerMixin, BaseEstimator):
         best_features : list of tuples
             Sorted list of features based on their discriminative power,
             containing tuples of (t-test value, channel name, index, metric name)
+
         Returns
         -------
         unique_features : {array-like} of shape (n_features)
