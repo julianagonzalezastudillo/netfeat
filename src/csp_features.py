@@ -1,11 +1,10 @@
 """
-===========================================
-  NETFEAT - Save CSP filters and patterns
-===========================================
-This module is design to save CSP filters and patterns for each subject
+================================================
+ 3.1. NETFEAT - CSP - Save filters and patterns
+================================================
+
+This module is design to save CSP filters and patterns for each subject, for posterior feature analysis.
 """
-# Authors: Juliana Gonzalez-Astudillo <julianagonzalezastudillo@gmail.com>
-#
 import copy as cp
 import pickle
 import gzip

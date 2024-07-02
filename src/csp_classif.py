@@ -1,8 +1,9 @@
 """
-=================================
-            NETFEAT
-=================================
+================================================
+ 3. NETFEAT - CSP
+================================================
 
+Processing pipeline using CSP filter and SVM.
 """
 
 from sklearn.pipeline import make_pipeline

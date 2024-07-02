@@ -1,8 +1,12 @@
 """
-=================================
-            NETFEAT
-=================================
+================================================
+ 3.2. NETFEAT - CSP - Plot filters and patterns
+================================================
 
+This module is design to plot CSP filters and patterns for each dataset and across datasets.
+Although eight filters were used in the classification pipeline, for simplicity, only the filter corresponding to the
+most discriminant component for each condition is included. These values are normalized to compensate for differences
+between datasets, and signs are not considered, as they are irrelevant to our analysis.
 """
 import pickle
 import gzip
@@ -23,16 +27,15 @@ warnings.filterwarnings("ignore")
 
 # Load configuration parameters
 params, paradigm = load_config()
+palette = params["colorbar"]["csp"]
+
 mi_class = {"rh": 0, "lh": 1}
 # min-var component --> csp['patterns'][:, 0]
 # max-var component --> csp['patterns'][:, 1]
 
-# plot params
-palette = params["colorbar"]["csp"]
-
 for csp_f_p in ["filters", "patterns"]:
     for class_name in ["rh", "lh"]:
-        # create dict with all the possible channels in all datasets
+        # Create dict with all the possible channels in all datasets
         ch_names = np.unique(sum(params["ch_names"].values(), []))
         ch_dict_all = dict.fromkeys(ch_names, [])
         for dt in np.append(DATASETS, "all"):
@@ -73,7 +76,7 @@ for csp_f_p in ["filters", "patterns"]:
                         ch_dict_all[ch_i] = np.append(ch_dict_all[ch_i], norm_csp[idx])
                     ch_dict = ch_dict_sub
 
-            # %% Exclude channels
+            # Exclude channels
             ch_dict = {
                 key: value
                 for key, value in ch_dict.items()
@@ -94,7 +97,7 @@ for csp_f_p in ["filters", "patterns"]:
             fig, ax = feature_plot_2d(ch_size, ch_name, palette=palette, title=title)
             plt.show()
             fig_name = f"csp_{csp_f_p}_mean_{class_name}_{dt_name}"
-            # fig.savefig(ConfigPath.RES_CSP / f"plot/{fig_name}.png", transparent=True)
+            fig.savefig(ConfigPath.RES_CSP / f"plot/{fig_name}.png", transparent=True)
 
             # Get 3D layout and save
             ch_name_idx = np.argsort(-ch_size)[:10]
@@ -107,6 +110,6 @@ for csp_f_p in ["filters", "patterns"]:
                 min_zero=True,
             )
 
-            # print 10 highest values channels
+            # Print 10 highest values channels
             print(f"{csp_f_p} {class_name}")
             print(sorted(zip(list(ch_dict.values()), list(ch_name)), reverse=True)[:10])

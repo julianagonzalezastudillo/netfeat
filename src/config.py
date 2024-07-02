@@ -1,3 +1,15 @@
+"""
+=================================
+     NETFEAT - CONFIGURATION
+=================================
+
+This script sets up the configuration for EEG data analysis using the Motor Imagery (MI) paradigm.
+- Import necessary libraries and modules.
+- Define the list of datasets and constants.
+- Create a ConfigPath class to manage directory paths for saving results.
+- Define a function to load configuration parameters from a JSON file.
+"""
+
 import os
 import json
 
