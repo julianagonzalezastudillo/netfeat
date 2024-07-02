@@ -1,4 +1,4 @@
-"""Code for channel selection."""
+"""Code for channel selection based on a Riemannian geometry criterion."""
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -6,11 +6,10 @@ from pyriemann.utils.distance import distance
 from pyriemann.classification import MDM
 
 from operator import itemgetter
-from moabb_settings import save_global
+from src.moabb_settings import save_global
 
 
 class ElectrodeSelection(BaseEstimator, TransformerMixin):
-
     """Channel selection based on a Riemannian geometry criterion.
 
     For each class, a centroid is estimated, and the channel selection is based
@@ -23,6 +22,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     ----------
     nelec : int (default 16)
         the number of electrode to keep in the final subset.
+
     metric : string | dict (default: 'riemann')
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
@@ -31,6 +31,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the selection.
+
     n_jobs : int, (default: 1)
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
@@ -43,13 +44,9 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     ----------
     covmeans_ : list
         the class centroids.
+
     dist_ : list
         list of distance at each interation.
-
-    See Also
-    --------
-    Kmeans
-    FgMDM
 
     References
     ----------
@@ -58,8 +55,18 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     IEEE/EMBS Conference on Neural Engineering (NER), 2011, 348-351
     """
 
-    def __init__(self, nelec=16, metric='riemann', n_jobs=1, dataset=None, session=None, sessions_name=None,
-                 ch_names=None, pipeline=None, cv_splits=None):
+    def __init__(
+        self,
+        nelec=16,
+        metric="riemann",
+        n_jobs=1,
+        dataset=None,
+        session=None,
+        sessions_name=None,
+        ch_names=None,
+        pipeline=None,
+        cv_splits=None,
+    ):
         """Init."""
         self.nelec = nelec
         self.metric = metric
@@ -79,8 +86,10 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             ndarray of SPD matrices.
+
         y : ndarray shape (n_trials, 1)
             labels corresponding to each trial.
+
         sample_weight : None | ndarray shape (n_trials, 1)
             the weights of each sample. if None, each sample is treated with
             equal weights.
@@ -106,9 +115,11 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
                 di[idx] = 0
                 for i in range(len(self.covmeans_)):
                     for j in range(i + 1, len(self.covmeans_)):
-                        di[idx] += distance(self.covmeans_[i][:, sub][sub, :],
-                                            self.covmeans_[j][:, sub][sub, :],
-                                            metric=mdm.metric_dist)
+                        di[idx] += distance(
+                            self.covmeans_[i][:, sub][sub, :],
+                            self.covmeans_[j][:, sub][sub, :],
+                            metric=mdm.metric_dist,
+                        )
             # print di
             torm = di.argmax()
             self.dist_.append(di.max())
@@ -135,4 +146,3 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         """
 
         return X[:, self.subelec_, :][:, :, self.subelec_]
-
