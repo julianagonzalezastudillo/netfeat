@@ -1,3 +1,10 @@
+"""
+=================================
+ 4. NETFEAT - Riemannian
+=================================
+
+Processing pipeline using Riemannian distance for feature selection + projection onto the tangent space and SVM.
+"""
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import SVC
 
@@ -7,7 +14,7 @@ import moabb
 from pyriemann.estimation import Covariances
 from pyriemann.tangentspace import TangentSpace
 
-from netfeat_pipeline import WithinSessionEvaluation_netfeat
+from netfeat_pipeline import WithinSessionEvaluationNetfeat
 from config import load_config, ConfigPath, DATASETS
 
 from riemanniantools.channelselection import ElectrodeSelection
@@ -27,7 +34,7 @@ pipeline = {
 }
 
 for dt in DATASETS:
-    cross_val = WithinSessionEvaluation_netfeat(
+    cross_val = WithinSessionEvaluationNetfeat(
         datasets=[dt],
         paradigm=paradigm,
         overwrite=True,

@@ -13,7 +13,7 @@ from mne.decoding import CSP
 import warnings
 import moabb
 
-from netfeat_pipeline import WithinSessionEvaluation_netfeat
+from netfeat_pipeline import WithinSessionEvaluationNetfeat
 from config import load_config, ConfigPath, DATASETS
 
 
@@ -34,7 +34,7 @@ pipeline = {
 }
 
 for dt in DATASETS:
-    cross_val = WithinSessionEvaluation_netfeat(
+    cross_val = WithinSessionEvaluationNetfeat(
         datasets=[dt],
         paradigm=paradigm,
         overwrite=True,

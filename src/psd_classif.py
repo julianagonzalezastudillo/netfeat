@@ -1,8 +1,9 @@
 """
 =================================
-            NETFEAT
+ 2. NETFEAT - PSD
 =================================
 
+Processing pipeline using PSD and SVM.
 """
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import SVC
@@ -12,7 +13,7 @@ import numpy as np
 import moabb
 import warnings
 
-from netfeat_pipeline import WithinSessionEvaluation_netfeat
+from netfeat_pipeline import WithinSessionEvaluationNetfeat
 from psdtools.psd import PSDWelch
 
 from preprocessing.channelselection import FeaturesSelection
@@ -37,7 +38,7 @@ pipeline = {
 }
 
 for dt in DATASETS:
-    cross_val = WithinSessionEvaluation_netfeat(
+    cross_val = WithinSessionEvaluationNetfeat(
         datasets=[dt],
         paradigm=paradigm,
         overwrite=True,

@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler
 
 import moabb
 
-from netfeat_pipeline import WithinSessionEvaluation_netfeat
+from netfeat_pipeline import WithinSessionEvaluationNetfeat
 from networktools.fc import FunctionalConnectivity
 from networktools.net import NetMetric
 from preprocessing.channelselection import FeaturesSelection
@@ -36,7 +36,7 @@ for name, metric in params["net_metrics"].items():
     )
 
 for dt in DATASETS:
-    cross_val = WithinSessionEvaluation_netfeat(
+    cross_val = WithinSessionEvaluationNetfeat(
         datasets=[dt],
         paradigm=paradigm,
         overwrite=True,
