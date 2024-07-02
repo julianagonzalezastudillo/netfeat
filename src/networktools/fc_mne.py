@@ -1,13 +1,10 @@
+"""This module is design to compute functional connectivity metrics on MOABB datasets [1].
+
+    References
+    ----------
+    [1] Corsi MC, Chevallier S, De Vico Fallani F, Yger F. Functional connectivity ensemble method
+     to enhance BCI performance (FUCONE). IEEE Transactions on Biomedical Engineering. 2022;.
 """
-=================================
- Functional Connectivity with MNE
-=================================
-This module is design to compute functional connectivity metrics on MOABB datasets
-"""
-# Authors: Sylvain Chevallier <sylvain.chevallier@uvsq.fr>,
-#          Marie-Constance Corsi <marie.constance.corsi@gmail.com>
-#
-# License: BSD (3-clause)
 
 from sklearn.covariance import ledoit_wolf
 
@@ -22,21 +19,28 @@ def _compute_fc_subtrial(epoch, delta=1, ratio=0.5, method="coh", fmin=8, fmax=3
     Most of the FC estimators are already implemented in mne-python (and used here from
     mne.connectivity.spectral_connectivity and mne.connectivity.envelope_correlation).
     The epoch is split into subtrials.
+
     Parameters
     ----------
     epoch: MNE epoch
         Epoch to process
+
     delta: float
         length of the subtrial in seconds
+
     ratio: float, in [0, 1]
         ratio overlap of the sliding windows
+
     method: string
         FC method to be applied, currently implemented methods are: "coh", "plv",
         "imcoh", "pli", "pli2_unbiased", "wpli", "wpli2_debiased", "cov", "plm", "aec"
+
     fmin: real
         filtering frequency, lowpass, in Hz
+
     fmax: real
         filtering frequency, highpass, in Hz
+
     Returns
     -------
     connectivity: array, (nb channels x nb channels)
@@ -44,7 +48,8 @@ def _compute_fc_subtrial(epoch, delta=1, ratio=0.5, method="coh", fmin=8, fmax=3
     Python version of the ft_connectivity_plm MATLAB code [1] of the Fieldtrip
     toolbox [2], which credits [3], with the "translation" into Python made by
     M.-C. Corsi.
-    references
+
+    References
     ----------
     .. [1] https://github.com/fieldtrip/fieldtrip/blob/master/connectivity/ft_connectivity_plm.m  # noqa
     .. [2] R. Oostenveld, P. Fries, E. Maris, J.-M. Schoffelen, and  R. Oostenveld,
@@ -93,7 +98,7 @@ def _compute_fc_subtrial(epoch, delta=1, ratio=0.5, method="coh", fmin=8, fmax=3
             n_jobs=1,
         )
         # c = np.squeeze(r[0])
-        c = r.get_data(output='dense')[:, :, 0]
+        c = r.get_data(output="dense")[:, :, 0]
         c = c + c.T - np.diag(np.diag(c)) + np.identity(nb_chan)
     elif method == "aec":
         # filter in frequency band of interest

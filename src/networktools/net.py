@@ -1,3 +1,4 @@
+"""Estimation of network properties."""
 import numpy as np
 import sys
 import networkx as nx
@@ -6,6 +7,15 @@ import networktools.net_topo as net_topo
 
 
 class NetMetric(TransformerMixin, BaseEstimator):
+    """
+    Compute network metrics from functional connectivity data.
+
+    Parameters:
+    -----------
+    method : str, optional (default="strength")
+        The network metric to compute. Options include "strength", "local_laterality", "integration", and "segregation".
+    """
+
     def __init__(self, method="strength", montage_name="standard_1005", dataset=None):
         self.method = method
         self.montage_name = montage_name
