@@ -1,9 +1,11 @@
 """
 =================================
-            NETFEAT
+ 1. NETFEAT - Network properties
 =================================
 
+Processing pipeline using functional connectivity + network metrics and SVM.
 """
+
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
