@@ -18,9 +18,7 @@ def hex_to_rgb(hex_color):
     return r, g, b
 
 
-def save_mat_file(
-    ch_size, palette, ch_name, file_name, ch_name_idx=None, min_zero=False
-):
+def save_mat_file(ch_size, palette, ch_name, file_name, ch_name_idx=None, min_val=None):
     """Save .mat to do 3D brain plots.
 
     Parameters
@@ -40,27 +38,29 @@ def save_mat_file(
     ch_name_idx : {array-like} of shape (n_channels)
         Vector with indexes of nodes names to be plotted.
 
-    min_zero : bool, optional
-        If True, set minimum value od the colorbar to zero. Default is False.
+    min_val : str, optional
+        If "zero", set minimum value of the colorbar to zero.
+        If "negative", set minimum value of the colorbar to -abs(max).
+        Default is False.
 
     Returns
     -------
     save .mat
     """
 
-    # Translate hex to rgb for colorbar
+    # Colorbar
+    # Translate hex to rgb
     palette_rgb = []
     for c in np.arange(len(palette)):
         r, g, b = hex_to_rgb(palette[c][1])
         palette_rgb.append([palette[c][0], r, g, b])
 
-    # Colorbar
     # Set ticks
     colorbar_ticks = [0, 0.25, 0.5, 0.75, 1]
 
     # Set ticks labels
     max_abs_ch_size = max(abs(ch_size))
-    if min(ch_size) < 0:
+    if min(ch_size) < 0 or min_val == "negative":
         colorbar_ticks_labels = [
             -round(max_abs_ch_size, 2),
             -round(max_abs_ch_size * 0.5, 2),
@@ -70,23 +70,23 @@ def save_mat_file(
         ]
         norm = plt.Normalize(vmin=-max(abs(ch_size)), vmax=max(abs(ch_size)))
     else:
-        if not min_zero:
+        if min_val == "zero":
+            colorbar_ticks_labels = [
+                round(max_abs_ch_size * i, 2) for i in colorbar_ticks
+            ]
+            norm = plt.Normalize(vmin=0, vmax=max(ch_size))
+        else:
             min_ch_size = min(ch_size)
             ticks = np.linspace(min_ch_size, max_abs_ch_size, 5)
             colorbar_ticks_labels = np.round(ticks, 2)
             norm = plt.Normalize(vmin=min(ch_size), vmax=max(abs(ch_size)))
-        else:
-            colorbar_ticks_labels = [
-                round(max_abs_ch_size * i, 2) for i in colorbar_ticks
-            ]
-            norm = plt.Normalize(vmin=0, vmax=max(abs(ch_size)))
 
     # Create colormap
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", palette)
     rgb = cmap(norm(ch_size))
 
     # Find 3D position for each channel
-    xyz = channel_pos(ch_name, dimension="3d", montage_type="standard") * 900
+    xyz = channel_pos(ch_name, dimension="3d", montage_type="standard") * 865
 
     # Set channel names to all if not selection
     if ch_name_idx is None:
