@@ -1,9 +1,3 @@
-"""
-=================================
-            NETFEAT
-=================================
-Plots adapted to plot accuracy results.
-"""
 import numpy as np
 from scipy.stats import t
 import pandas as pd
@@ -218,7 +212,8 @@ def meta_analysis_plot(
             np.array([v - ci[-1], v + ci[-1]]), np.ones((2,)) * (ind + 1), c="tab:grey"
         )
     _range = max(abs(_min), abs(_max))
-    ax.set_xlim((0 - _range, 0 + _range))
+    # ax.set_xlim((0 - _range, 0 + _range))
+    ax.set_xlim((0 - 1.63, 0 + 1.63))
     final_effect = combine_effects(df_fw["smd"], df_fw["nsub"])
     ax.scatter(
         pd.concat([pd.Series([final_effect]), df_fw["smd"]]),
