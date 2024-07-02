@@ -1,3 +1,12 @@
+"""
+============================================
+ 5.2. NETFEAT - Plot feature stats
+============================================
+
+Group-averaged t-values, contrasting RMI versus LMI in the α-β band for PSD and network properties.
+Performed for each dataset and across datasets.
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -122,20 +131,20 @@ for metric, method in methods.items():
         fig, ax = feature_plot_2d(ch_size, ch_names, palette=palette)
         plt.show()
         fig_name = ConfigPath.RES_DIR / f"stats/t_test_{metric}_{dts}.png"
-        # fig.savefig(fig_name, transparent=True)
+        fig.savefig(fig_name, transparent=True)
 
         # Get 3D layout and save
         # Select channel names to plot
         ch_name_idx = np.where(np.abs(ch_size) >= thresh)[0]
         ch_name_idx_sort = ch_name_idx[np.argsort(ch_size[ch_name_idx])]
 
-        # save_mat_file(
-        #     ch_size,
-        #     palette,
-        #     ch_names,
-        #     f"t_test_{metric}_{dts}",
-        #     ch_name_idx=ch_name_idx,
-        # )
+        save_mat_file(
+            ch_size,
+            palette,
+            ch_names,
+            f"t_test_{metric}_{dts}",
+            ch_name_idx=ch_name_idx,
+        )
 
         # Print significant channels
         print(f"significant t-val: {ch_names[ch_name_idx_sort]}")

@@ -1,10 +1,13 @@
 """
-=================================
-            NETFEAT
-=================================
-Plot classification results. Here we plot the results using some of the convenience methods within the toolkit.
-The score_plot visualizes all the data with one score per subject for every dataset and pipeline.
+============================================
+ 5.1. NETFEAT - Plot classification results
+============================================
+
+Plot classification results. Here we plot the results using some of the
+convenience methods within the toolkit. The score_plot visualizes all the
+data with one score per subject for every dataset and pipeline.
 """
+
 import pandas as pd
 import numpy as np
 from moabb.analysis.meta_analysis import compute_dataset_statistics
@@ -15,9 +18,7 @@ from config import ConfigPath, load_config, DATASETS
 
 
 def format_mean_std(group):
-    """
-    # Custom function to format mean and std together
-    """
+    """Custom function to format mean and std together."""
     mean = group["mean"]
     std = group["std"]
     if np.isnan(std):
