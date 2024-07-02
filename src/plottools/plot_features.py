@@ -30,7 +30,7 @@ def colorbar(fig, scatter):
     cbar.ax.tick_params(labelsize=7, size=0)
 
 
-def feature_plot_2d(ch_size, ch_names, palette=None, title=None, min_zero=True):
+def feature_plot_2d(ch_size, ch_names, palette=None, title=None, min_val=None):
     """Plot scores for all pipelines and all datasets
 
     Parameters
@@ -44,8 +44,10 @@ def feature_plot_2d(ch_size, ch_names, palette=None, title=None, min_zero=True):
     palette : list  of shape (n_colors, 2)
         Each row has the color position in the colorbar and the color code in hex.
 
-    min_zero : bool, optional
-        If True, set minimum value of the colorbar to zero. Default is False.
+    min_val : str, optional
+        If "zero", set minimum value of the colorbar to zero.
+        If "negative", set minimum value of the colorbar to -abs(max).
+        Default is False.
 
     title: str, optional
         Title of the plot.
@@ -67,9 +69,9 @@ def feature_plot_2d(ch_size, ch_names, palette=None, title=None, min_zero=True):
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", colors)
 
     # Set norm values
-    if min(ch_size) < 0:
+    if min(ch_size) < 0 or min_val == "negative":
         vmin = -max(abs(ch_size))
-    elif min_zero:
+    elif min_val == "zero":
         vmin = 0
     else:
         vmin = min(ch_size)
