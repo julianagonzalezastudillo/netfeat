@@ -2,7 +2,7 @@
 ---
 This repository contains the code and supporting documents associated with the following manuscript:
 
-Gonzalez-Astudillo J., De Vico Fallani F. "Feature interpretability in BCIs: exploring the role of network lateralization"
+J. Gonzalez-Astudillo and F. De Vico Fallani. (2024) "Feature interpretability in BCIs: exploring the role of network lateralization." [arXiv:2407.11617](https://arxiv.org/abs/2407.11617)
 
 ---
 ## Authors:
