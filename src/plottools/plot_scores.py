@@ -87,7 +87,7 @@ def score_plot(data, pipelines=None):
         alpha=0.85,
         marker=my_marker,
         s=35,
-        edgecolors="k",
+        edgecolor="k",
         linewidth=0.6,
     )
     text_dt = data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
