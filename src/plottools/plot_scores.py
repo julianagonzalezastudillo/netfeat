@@ -9,10 +9,10 @@ from svgpath2mpl import parse_path
 import moabb.analysis.plotting as moabb_plt
 from moabb.analysis.meta_analysis import (
     collapse_session_scores,
-    combine_effects,
     combine_pvalues,
 )
 from src.config import load_config
+from statsmodels.stats.meta_analysis import combine_effects
 
 
 params, paradigm = load_config()
@@ -71,17 +71,17 @@ def score_plot(data, pipelines=None):
         s=22,
     )
     sns.stripplot(
-        y=data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
-            "dataset"
-        ],
-        x=data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
+        y=data.groupby(["dataset", "pipeline"], as_index=False, observed=False)[
             "score"
-        ],
+        ].mean()["dataset"],
+        x=data.groupby(["dataset", "pipeline"], as_index=False, observed=False)[
+            "score"
+        ].mean()["score"],
         jitter=0.15,
         palette=colors,
-        hue=data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
-            "pipeline"
-        ],
+        hue=data.groupby(["dataset", "pipeline"], as_index=False, observed=False)[
+            "score"
+        ].mean()["pipeline"],
         dodge=True,
         ax=ax,
         alpha=0.85,
@@ -90,18 +90,18 @@ def score_plot(data, pipelines=None):
         edgecolor="k",
         linewidth=0.6,
     )
-    text_dt = data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
-        "dataset"
-    ]
-    text_pipe = data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
-        "pipeline"
-    ]
-    text_score = data.groupby(["dataset", "pipeline"], as_index=False)["score"].mean()[
+    text_dt = data.groupby(["dataset", "pipeline"], as_index=False, observed=False)[
         "score"
-    ]
-    text_sd = data.groupby(["dataset", "pipeline"], as_index=False)["score"].std()[
+    ].mean()["dataset"]
+    text_pipe = data.groupby(["dataset", "pipeline"], as_index=False, observed=False)[
         "score"
-    ]
+    ].mean()["pipeline"]
+    text_score = data.groupby(["dataset", "pipeline"], as_index=False, observed=False)[
+        "score"
+    ].mean()["score"]
+    text_sd = data.groupby(["dataset", "pipeline"], as_index=False, observed=False)[
+        "score"
+    ].std()["score"]
     # print(text_dt)
     # print(text_pipe)
     # print('mean')
@@ -141,7 +141,7 @@ def _simplify_names(x):
 def meta_analysis_plot(
     stats_df, alg1, alg2, alg1_name=None, alg2_name=None
 ):  # noqa: C901
-    """Meta-analysis to compare two algorithms across several datasets
+    """Meta-analysis to compare two algorithms across several datasets.
 
     A meta-analysis style plot that shows the standardized effect with
     confidence intervals over all datasets for two algorithms.
@@ -162,59 +162,105 @@ def meta_analysis_plot(
         Pyplot handle
     """
 
+    # Helper function to choose marker size/symbol based on p-value
     def _marker(pval):
         if pval < 0.001:
             return "$* **$", 200
         elif pval < 0.01:
             return "$**$", 60
         elif pval < 0.05:
-            return "$*$", 30
+            return "$*$", 10
         else:
             raise ValueError("insignificant pval {}".format(pval))
 
     assert alg1 in stats_df.pipe1.unique()
     assert alg2 in stats_df.pipe1.unique()
+
+    # Forward and backward comparisons: alg1 > alg2 and alg2 > alg1
     df_fw = stats_df.loc[(stats_df.pipe1 == alg1) & (stats_df.pipe2 == alg2)]
     df_fw = df_fw.sort_values(by="pipe1")
     df_bk = stats_df.loc[(stats_df.pipe1 == alg2) & (stats_df.pipe2 == alg1)]
     df_bk = df_bk.sort_values(by="pipe1")
+
+    # Get list of datasets
     dsets = df_fw.dataset.unique()
-    ci = []
+
+    ci = []  # Confidence intervals for each dataset
+    sig_ind = []  # Indexes of datasets with significant differences
+    pvals = []  # Corresponding p-values
+
+    # Set up figure (split into main plot and p-value axis)
     fig = plt.figure(dpi=600)
     gs = gridspec.GridSpec(1, 5)
-    sig_ind = []
-    pvals = []
     ax = fig.add_subplot(gs[0, :-1])
+
+    # Y-axis labels: datasets + "Meta-effect"
     ax.set_yticks(np.arange(len(dsets) + 1))
-    ax.set_yticklabels(["Meta-effect"] + [_simplify_names(d) for d in dsets])
+    ax.set_yticklabels(["summary effect"] + [_simplify_names(d) for d in dsets])
     pval_ax = fig.add_subplot(gs[0, -1], sharey=ax)
     plt.setp(pval_ax.get_yticklabels(), visible=False)
-    _min = 0
-    _max = 0
+
+    _min = 0  # Track min effect size (for setting x-axis limits)
+    _max = 0  # Track max effect size
+
+    # Plot per-dataset effect sizes and confidence intervals
     for ind, d in enumerate(dsets):
-        nsub = float(df_fw.loc[df_fw.dataset == d, "nsub"])
+        nsub = float(df_fw.loc[df_fw.dataset == d, "nsub"].iloc[0])
         t_dof = nsub - 1
-        ci.append(t.ppf(0.95, t_dof) / np.sqrt(nsub))
-        v = float(df_fw.loc[df_fw.dataset == d, "smd"])
+        ci.append(t.ppf(0.95, t_dof) / np.sqrt(nsub))  # Compute 95% CI (approx.)
+
+        v = float(
+            df_fw.loc[df_fw.dataset == d, "smd"].iloc[0]
+        )  # Standardized Mean Difference (SMD)
+
+        # Handle significance annotations based on effect direction and p-values
         if v > 0:
             p = df_fw.loc[df_fw.dataset == d, "p"].item()
-            if p < 0.05:
-                sig_ind.append(ind)
-                pvals.append(p)
         else:
             p = df_bk.loc[df_bk.dataset == d, "p"].item()
-            if p < 0.05:
-                sig_ind.append(ind)
-                pvals.append(p)
+        if p < 0.05:
+            sig_ind.append(ind)
+            pvals.append(p)
+
+        # Update min/max values for x-axis limits
         _min = _min if (_min < (v - ci[-1])) else (v - ci[-1])
         _max = _max if (_max > (v + ci[-1])) else (v + ci[-1])
-        ax.plot(
-            np.array([v - ci[-1], v + ci[-1]]), np.ones((2,)) * (ind + 1), c="tab:grey"
-        )
+
+        # Plot horizontal line for CI
+        # ax.plot(
+        #     np.array([v - ci[-1], v + ci[-1]]), np.ones((2,)) * (ind + 1), c="tab:grey"
+        # )
+
+    # Fix x-axis range
     _range = max(abs(_min), abs(_max))
+    # print(_range)
     # ax.set_xlim((0 - _range, 0 + _range))
-    ax.set_xlim((0 - 1.63, 0 + 1.63))
-    final_effect = combine_effects(df_fw["smd"], df_fw["nsub"])
+    ax.set_xlim((0 - 2.65, 0 + 2.65))
+
+    # Compute the combined (meta) effect across datasets using random-effects model
+    # replace old computation from computation to moabb.analysis.meta_analysis.combine_effects
+    # final_effect = combine_effects(df_fw["smd"], df_fw["nsub"])
+    # Warning: add var_smd computation to moabb.analysis.meta_analysis.compute_dataset_statistics
+    # or use standard error approximation as:
+    # ses = 1 / np.sqrt(df_fw["nsub"])
+    meta_res = combine_effects(
+        df_fw["smd"].to_numpy(),
+        df_fw["var_smd"].to_numpy(),
+        method_re="dl",
+        row_names=df_fw["dataset"].tolist(),
+        use_t=False,
+    )
+    final_effect = meta_res.mean_effect_re  # random-effects
+    # print(meta_res.summary_frame().to_string())
+
+    summary_df = meta_res.summary_frame()
+    summary_df_dsets = summary_df.loc[df_fw["dataset"]]
+    ci_low = summary_df_dsets["ci_low"]
+    ci_upp = summary_df_dsets["ci_upp"]
+    for i, (low, upp) in enumerate(zip(ci_low, ci_upp)):
+        ax.plot([low, upp], [i + 1, i + 1], c="tab:grey", zorder=1)
+
+    # Plot meta-effect (top) and individual effects (below)
     ax.scatter(
         pd.concat([pd.Series([final_effect]), df_fw["smd"]]),
         np.arange(len(dsets) + 1),
@@ -222,18 +268,23 @@ def meta_analysis_plot(
         marker="D",
         c=["k"] + ["tab:grey"] * len(dsets),
     )
+
+    # Add significance markers for per-dataset effects
     for i, p in zip(sig_ind, pvals):
         m, s = _marker(p)
         ax.scatter(
             df_fw["smd"].iloc[i], i + 1.4, s=s, marker=m, color="r", linewidths=0.5
         )
-    # pvalues axis stuf
+
+    # Format p-value panel (right side)
     pval_ax.set_xlim([-0.1, 0.1])
     pval_ax.grid(False)
     pval_ax.set_title("p-value", fontdict={"fontsize": 10, "fontname": "Arial"})
     pval_ax.set_xticks([])
     for spine in pval_ax.spines.values():
         spine.set_visible(False)
+
+    # Display p-values next to significant rows
     for ind, p in zip(sig_ind, pvals):
         pval_ax.text(
             0,
@@ -244,48 +295,42 @@ def meta_analysis_plot(
             fontsize=8,
             fontname="Arial",
         )
+
+    # Show significance for meta-effect (top row)
     if final_effect > 0:
         p = combine_pvalues(df_fw["p"], df_fw["nsub"])
-        if p < 0.05:
-            m, s = _marker(p)
-            ax.scatter([final_effect], [-0.4], s=s, marker=m, c="r", linewidths=0)
-            pval_ax.text(
-                0,
-                0,
-                horizontalalignment="center",
-                verticalalignment="center",
-                s="{:.2e}".format(p),
-                fontsize=8,
-                fontname="Arial",
-            )
     else:
         p = combine_pvalues(df_bk["p"], df_bk["nsub"])
-        if p < 0.05:
-            m, s = _marker(p)
-            ax.scatter([final_effect], [-0.4], s=s, marker=m, c="r", linewidths=0)
-            pval_ax.text(
-                0,
-                0,
-                horizontalalignment="center",
-                verticalalignment="center",
-                s="{:.2e}".format(p),
-                fontsize=8,
-                fontname="Arial",
-            )
 
+    if p < 0.05:
+        m, s = _marker(p)
+        ax.scatter([final_effect], [-0.4], s=s, marker=m, c="r", linewidths=0)
+        pval_ax.text(
+            0,
+            0,
+            horizontalalignment="center",
+            verticalalignment="center",
+            s="{:.2e}".format(p),
+            fontsize=8,
+            fontname="Arial",
+        )
+
+    # Clean up axis formatting
     ax.grid(False)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.axvline(0, linestyle="--", c="k")
     ax.axhline(0.5, linestyle="-", linewidth=3, c="k")
 
+    # Title showing which direction favors which algorithm
     alg1_name = alg1_name if alg1_name is not None else alg1
     alg2_name = alg2_name if alg2_name is not None else alg2
-
     space1 = " " * (45 - len(alg1_name))
     space2 = " " * (45 - len(alg2_name))
     title = f"< {alg2_name} better{space2}\n{space1}{alg1_name} better >"
     ax.set_title(title, ha="left", ma="right", loc="left", fontname="Arial")
+
+    # Label x-axis
     ax.set_xlabel("Standardized Mean Difference", fontname="Arial")
     plt.setp(ax.get_xticklabels(), fontname="Arial")
     plt.setp(ax.get_yticklabels(), fontname="Arial")
