@@ -214,10 +214,11 @@ def meta_analysis_plot(
         )  # Standardized Mean Difference (SMD)
 
         # Handle significance annotations based on effect direction and p-values
+        # Warning: add FDR correction to moabb.analysis.meta_analysis.compute_dataset_statistics
         if v > 0:
-            p = df_fw.loc[df_fw.dataset == d, "p"].item()
+            p = df_fw.loc[df_fw.dataset == d, "p_fdr"].item()
         else:
-            p = df_bk.loc[df_bk.dataset == d, "p"].item()
+            p = df_bk.loc[df_bk.dataset == d, "p_fdr"].item()
         if p < 0.05:
             sig_ind.append(ind)
             pvals.append(p)
@@ -298,9 +299,9 @@ def meta_analysis_plot(
 
     # Show significance for meta-effect (top row)
     if final_effect > 0:
-        p = combine_pvalues(df_fw["p"], df_fw["nsub"])
+        p = combine_pvalues(df_fw["p_fdr"], df_fw["nsub"])
     else:
-        p = combine_pvalues(df_bk["p"], df_bk["nsub"])
+        p = combine_pvalues(df_bk["p_fdr"], df_bk["nsub"])
 
     if p < 0.05:
         m, s = _marker(p)
