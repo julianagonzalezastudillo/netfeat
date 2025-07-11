@@ -299,9 +299,9 @@ def meta_analysis_plot(
 
     # Show significance for meta-effect (top row)
     if final_effect > 0:
-        p = combine_pvalues(df_fw["p_fdr"], df_fw["nsub"])
+        p = combine_pvalues(df_fw["p"], df_fw["nsub"])
     else:
-        p = combine_pvalues(df_bk["p_fdr"], df_bk["nsub"])
+        p = combine_pvalues(df_bk["p"], df_bk["nsub"])
 
     if p < 0.05:
         m, s = _marker(p)
