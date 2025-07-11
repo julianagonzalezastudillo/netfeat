@@ -65,7 +65,7 @@ res_classify_plot.mkdir(parents=True, exist_ok=True)
 fig.savefig(res_classify_plot / "classif_acc.png", transparent=True)
 plt.show()
 
-# Plot stats
+# %% Plot stats
 stats = compute_dataset_statistics(select_results)
 stats = stats.sort_values(by="dataset", ascending=False)
 algos = ["s+SVM", "λ+SVM", "σ+SVM", "ω+SVM"]
@@ -93,19 +93,23 @@ table = select_results
 table["score"] *= 100
 
 # Compute the mean and standard deviation of the scores per dataset and pipeline
-stats = table.groupby(["dataset", "pipeline"])["score"].agg(["mean", "std"])
-stats["mean_std"] = stats.apply(format_mean_std, axis=1)
-pivoted_stats = stats["mean_std"].unstack(level=1)
-print(pivoted_stats.reset_index().to_string(index=False))
+stats_mean_std = table.groupby(["dataset", "pipeline"], observed=False)["score"].agg(
+    ["mean", "std"]
+)
+stats_mean_std["mean_std"] = stats_mean_std.apply(format_mean_std, axis=1)
+pivoted_stats_mean_std = stats_mean_std["mean_std"].unstack(level=1)
+print(pivoted_stats_mean_std.reset_index().to_string(index=False))
 
 # Print total means
-test = table.pivot_table(
-    index="pipeline", columns="dataset", values="score", aggfunc="mean"
+resume_table = table.pivot_table(
+    index="pipeline", columns="dataset", values="score", aggfunc="mean", observed=False
 )
-mean_across_datasets = test.mean(axis=1)
-std_across_datasets = test.std(axis=1)
-pipeline_stats = pd.DataFrame(
+mean_across_datasets = resume_table.mean(axis=1)
+std_across_datasets = resume_table.std(axis=1)
+pipeline_stats_mean_std = pd.DataFrame(
     {"mean": mean_across_datasets, "std": std_across_datasets}
 )
-pipeline_stats["mean_std"] = pipeline_stats.apply(format_mean_std, axis=1)
-print(pipeline_stats["mean_std"].to_string())
+pipeline_stats_mean_std["mean_std"] = pipeline_stats_mean_std.apply(
+    format_mean_std, axis=1
+)
+print(pipeline_stats_mean_std["mean_std"].to_string())
