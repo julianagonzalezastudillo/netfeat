@@ -10,7 +10,6 @@ Performed for each dataset and across datasets.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy.stats as stats
 from scipy.stats import combine_pvalues
 from statsmodels.stats.multitest import multipletests
 
@@ -68,13 +67,14 @@ def channel_size(df, channel_names, effect_size=False):
 
 def combine_channel_pvalues(df, channels):
     """
-    Combine p-values across datasets for each channel using Stouffer’s method,
-    which weights p-values by the square root of the number of subjects per dataset.
+    Combines p-values for each channel in two steps:
+    1. Combine across subjects within each dataset (per channel).
+    2. Combine across datasets (per channel), handling missing channels.
 
     Parameters
     ----------
     df : pd.DataFrame
-        DataFrame containing columns: 'node' (channel name), 'dataset', 'p_val', 'nsub' (number of subjects).
+        DataFrame with columns: 'node', 'dataset', 'p_val', 'nsub'.
     channels : list of str
         List of channel names to process.
 
