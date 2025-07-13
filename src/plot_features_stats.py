@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+from scipy.stats import combine_pvalues
+from statsmodels.stats.multitest import multipletests
 
 from plottools.plot_positions import channel_pos
 from plottools.plot_tools import save_mat_file
@@ -64,6 +66,51 @@ def channel_size(df, channel_names, effect_size=False):
     return np.array(ch_size_)
 
 
+def combine_channel_pvalues(df, channels):
+    """
+    Combine p-values across datasets for each channel using Stouffer’s method,
+    which weights p-values by the square root of the number of subjects per dataset.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing columns: 'node' (channel name), 'dataset', 'p_val', 'nsub' (number of subjects).
+    channels : list of str
+        List of channel names to process.
+
+    Returns
+    -------
+    np.ndarray
+        Array of combined p-values, one per channel.
+    """
+
+    # Map each dataset to its number of subjects (used as weights for Stouffer's method)
+    weights_dict = dict(df.groupby("dataset")["nsub"].first())
+
+    combined_pvalues = []
+    for ch in channels:
+        pvals, weights = [], []
+
+        # Collect p-values and weights across datasets for the current channel
+        for dt in df["dataset"].unique():
+            df_ch_dt = df[(df["node"] == ch) & (df["dataset"] == dt)]
+            if not df_ch_dt.empty:
+                p = df_ch_dt["p_val"].values[0]
+                w = np.sqrt(weights_dict[dt])  # weight = sqrt(n subjects)
+                pvals.append(p)
+                weights.append(w)
+
+        # Combine p-values using Stouffer’s method, weighted by sample size
+        if pvals:
+            W = np.sqrt(nsubs)
+            _, p_comb = combine_pvalues(pvals, method="stouffer", weights=weights)
+        else:
+            p_comb = 1.0  # Assign non-significant value if no p-values found
+        combined_pvalues.append(p_comb)
+
+    return np.array(combined_pvalues)
+
+
 # Load parameters
 params, paradigm = load_config()
 
@@ -73,7 +120,7 @@ positions = channel_pos(ch_keys, dimension="2d")
 pos = {key: pos for key, pos in zip(ch_keys, positions)}
 
 # Load stat data
-df_t_test = pd.read_csv(ConfigPath.RES_DIR / "stats/t_test.csv")
+df_t_test = pd.read_csv(ConfigPath.RES_DIR / "stats/t_test_perm5000.csv")
 
 # Methods
 methods = {metric: "netmetric" for name, metric in params["net_metrics"].items()}
@@ -94,9 +141,7 @@ for metric, method in methods.items():
     palette = (
         params["colorbar"]["psd"]
         if method == "psdwelch"
-        else params["colorbar"]["net"]
-        if method == "netmetric"
-        else None
+        else params["colorbar"]["net"] if method == "netmetric" else None
     )
 
     print("*" * 100)
@@ -114,18 +159,29 @@ for metric, method in methods.items():
         xlim_max = max(positions[:, 0])
         ch_names = ch_names[~np.isin(ch_names, EXCLUDE_CHANNELS)]
 
-        # Get mean channel size
+        # Compute t-values (mean channel size)
         ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
 
-        # Threshold for node names (p-val < 0.05)
-        n_subjects = 0
-        for dt_ in np.unique(df_metric_dt["dataset"]):
-            df = df_metric_dt.loc[df_metric_dt["dataset"] == dt_]
-            n_subjects += len(np.unique(df["subject"]))
-        thresh = stats.t.ppf(1 - P_VAL / 2, n_subjects)
-        print(f"t-val: {thresh}")
-        if not np.any(np.abs(ch_size) >= thresh):
-            thresh = abs(ch_size[np.argsort(abs(ch_size))[-10:]][0])
+        # Combine p-values per channels
+        combined_pvals = combine_channel_pvalues(df_metric_dt, ch_names)
+
+        # Apply Bonferroni correction
+        rejected, pvals_corrected, _, _ = multipletests(
+            combined_pvals, alpha=P_VAL, method="bonferroni"
+        )
+
+        # Determine indices of significant or top 10 channels
+        if np.any(rejected):
+            ch_name_idx = np.where(rejected)[0]
+            msg = "Significant channels (Bonferroni corrected):"
+        else:
+            ch_name_idx = np.argsort(np.abs(ch_size))[-10:]
+            msg = "No significant channels after Bonferroni correction. Showing top 10 t-values:"
+
+        # Sort selected channels by absolute t-value
+        sorted_idx = ch_name_idx[np.argsort(np.abs(ch_size[ch_name_idx]))]
+        sig_channels_sort = ch_names[sorted_idx]
+        print(f"{msg} {sig_channels_sort}")
 
         # Plot t-values
         fig, ax = feature_plot_2d(ch_size, ch_names, palette=palette)
@@ -134,10 +190,6 @@ for metric, method in methods.items():
         fig.savefig(fig_name, transparent=True)
 
         # Get 3D layout and save
-        # Select channel names to plot
-        ch_name_idx = np.where(np.abs(ch_size) >= thresh)[0]
-        ch_name_idx_sort = ch_name_idx[np.argsort(ch_size[ch_name_idx])]
-
         save_mat_file(
             ch_size,
             palette,
@@ -145,6 +197,3 @@ for metric, method in methods.items():
             f"t_test_{metric}_{dts}",
             ch_name_idx=ch_name_idx,
         )
-
-        # Print significant channels
-        print(f"significant t-val: {ch_names[ch_name_idx_sort]}")
