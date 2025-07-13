@@ -83,32 +83,38 @@ def combine_channel_pvalues(df, channels):
     np.ndarray
         Array of combined p-values, one per channel.
     """
+    # Step 1: Combine subject-level p-values within each dataset for each channel
+    within_dataset_pvals = {}  # (dataset, channel) -> combined pval
+    dataset_weights = {}  # (dataset, channel) -> nsub (used as weight)
 
-    # Map each dataset to its number of subjects (used as weights for Stouffer's method)
-    weights_dict = dict(df.groupby("dataset")["nsub"].first())
+    for (dataset, ch), df_grp in df.groupby(["dataset", "node"]):
+        pvals = df_grp["p_val"].values
+        nsub = df_grp["nsub"].iloc[0]
+        if len(pvals) > 1:
+            w = np.ones_like(pvals)
+            _, p_comb = combine_pvalues(pvals, method="stouffer", weights=w)
+        else:
+            p_comb = pvals[0]
+        within_dataset_pvals[(dataset, ch)] = p_comb
+        dataset_weights[(dataset, ch)] = nsub
 
-    combined_pvalues = []
+    # Step 2: Combine dataset-level p-values for each channel
+    final_pvals = {}
     for ch in channels:
         pvals, weights = [], []
+        for dataset in df["dataset"].unique():
+            key = (dataset, ch)
+            if key in within_dataset_pvals:
+                pvals.append(within_dataset_pvals[key])
+                weights.append(np.sqrt(dataset_weights[key]))
 
-        # Collect p-values and weights across datasets for the current channel
-        for dt in df["dataset"].unique():
-            df_ch_dt = df[(df["node"] == ch) & (df["dataset"] == dt)]
-            if not df_ch_dt.empty:
-                p = df_ch_dt["p_val"].values[0]
-                w = np.sqrt(weights_dict[dt])  # weight = sqrt(n subjects)
-                pvals.append(p)
-                weights.append(w)
-
-        # Combine p-values using Stouffer’s method, weighted by sample size
         if pvals:
-            W = np.sqrt(nsubs)
             _, p_comb = combine_pvalues(pvals, method="stouffer", weights=weights)
         else:
-            p_comb = 1.0  # Assign non-significant value if no p-values found
-        combined_pvalues.append(p_comb)
+            p_comb = 1.0  # If channel missing from all datasets
+        final_pvals[ch] = p_comb
 
-    return np.array(combined_pvalues)
+    return np.array([final_pvals.get(ch, 1.0) for ch in channels])
 
 
 # Load parameters
