@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import pickle
 from scipy import stats
+import time
 
 from config import load_config, ConfigPath, DATASETS, LATERALIZATION_METRIC
 from moabb_settings import create_info_file
@@ -25,6 +26,7 @@ methods = {metric: "netmetric" for name, metric in params["net_metrics"].items()
 methods["psdwelch"] = "psdwelch"
 
 # Initialize data containers
+start_time = time.time()
 df_list = []
 for metric, method in methods.items():
     ch_keys = np.unique(sum(params["ch_names"].values(), []))
@@ -33,11 +35,10 @@ for metric, method in methods.items():
     ch_dict_p_val = dict(zip(ch_keys, ch_values))
 
     for dataset in DATASETS:
+        print(f"Dataset: {type(dataset).__name__}")
         for subject in dataset.subject_list:
             # Initialize per-subject data containers
             df_sub_list = []
-
-            print(f"Dataset: {type(dataset).__name__}, sub: {subject}")
 
             ch_dict_l_sub = dict(zip(ch_keys, ch_values))
             ch_dict_r_sub = dict(zip(ch_keys, ch_values))
@@ -76,8 +77,23 @@ for metric, method in methods.items():
                 ch_dict_l_sub[ch_i] = metric_l_sub[:, idx]
                 ch_dict_r_sub[ch_i] = metric_r_sub[:, idx]
 
-            # Perform t-test across classes for each subject per channel
-            n_t_val, n_p_val = stats.ttest_ind(metric_r_sub, metric_l_sub)
+            # Perform t-test across classes for each subject per channel, 5000 permutations
+            n_channels = metric_r_sub.shape[1]
+            n_t_val = []
+            n_p_val = []
+
+            for ch in range(n_channels):
+                t, p = stats.ttest_ind(
+                    metric_r_sub[:, ch],
+                    metric_l_sub[:, ch],
+                    permutations=5000,
+                    random_state=42,
+                )
+                n_t_val.append(t)
+                n_p_val.append(p)
+
+            n_t_val = np.array(n_t_val)
+            n_p_val = np.array(n_p_val)
 
             for ch_i, t_val, p_val in zip(ch_names_dataset, n_t_val, n_p_val):
                 ch_dict_t_val[ch_i] = np.append(ch_dict_t_val[ch_i], t_val)
@@ -106,4 +122,8 @@ for metric, method in methods.items():
 df_t_test = pd.concat(df_list, ignore_index=True)
 
 # Save the results to a CSV file
-df_t_test.to_csv(ConfigPath.RES_DIR / "stats/t_test.csv", index=False)
+df_t_test.to_csv(ConfigPath.RES_DIR / "stats/t_test_perm5000.csv", index=False)
+
+end_time = time.time()
+elapsed = end_time - start_time
+print(f"⏱️ Elapsed time: {elapsed:.2f} seconds")
