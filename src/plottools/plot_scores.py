@@ -205,9 +205,9 @@ def meta_analysis_plot(
 
     # Plot per-dataset effect sizes and confidence intervals
     for ind, d in enumerate(dsets):
-        nsub = float(df_fw.loc[df_fw.dataset == d, "nsub"].iloc[0])
-        t_dof = nsub - 1
-        ci.append(t.ppf(0.95, t_dof) / np.sqrt(nsub))  # Compute 95% CI (approx.)
+        # nsub = float(df_fw.loc[df_fw.dataset == d, "nsub"].iloc[0])
+        # t_dof = nsub - 1
+        # ci.append(t.ppf(0.95, t_dof) / np.sqrt(nsub))  # Compute 95% CI (approx.)
 
         v = float(
             df_fw.loc[df_fw.dataset == d, "smd"].iloc[0]
@@ -216,16 +216,16 @@ def meta_analysis_plot(
         # Handle significance annotations based on effect direction and p-values
         # Warning: add FDR correction to moabb.analysis.meta_analysis.compute_dataset_statistics
         if v > 0:
-            p = df_fw.loc[df_fw.dataset == d, "p_fdr"].item()
+            p = df_fw.loc[df_fw.dataset == d, "p_bonferroni"].item()
         else:
-            p = df_bk.loc[df_bk.dataset == d, "p_fdr"].item()
+            p = df_bk.loc[df_bk.dataset == d, "p_bonferroni"].item()
         if p < 0.05:
             sig_ind.append(ind)
             pvals.append(p)
 
         # Update min/max values for x-axis limits
-        _min = _min if (_min < (v - ci[-1])) else (v - ci[-1])
-        _max = _max if (_max > (v + ci[-1])) else (v + ci[-1])
+        # _min = _min if (_min < (v - ci[-1])) else (v - ci[-1])
+        # _max = _max if (_max > (v + ci[-1])) else (v + ci[-1])
 
         # Plot horizontal line for CI
         # ax.plot(
@@ -233,7 +233,7 @@ def meta_analysis_plot(
         # )
 
     # Fix x-axis range
-    _range = max(abs(_min), abs(_max))
+    # _range = max(abs(_min), abs(_max))
     # print(_range)
     # ax.set_xlim((0 - _range, 0 + _range))
     ax.set_xlim((0 - 2.65, 0 + 2.65))
