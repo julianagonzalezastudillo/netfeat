@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.stats import t
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -205,10 +204,6 @@ def meta_analysis_plot(
 
     # Plot per-dataset effect sizes and confidence intervals
     for ind, d in enumerate(dsets):
-        # nsub = float(df_fw.loc[df_fw.dataset == d, "nsub"].iloc[0])
-        # t_dof = nsub - 1
-        # ci.append(t.ppf(0.95, t_dof) / np.sqrt(nsub))  # Compute 95% CI (approx.)
-
         v = float(
             df_fw.loc[df_fw.dataset == d, "smd"].iloc[0]
         )  # Standardized Mean Difference (SMD)
@@ -216,27 +211,12 @@ def meta_analysis_plot(
         # Handle significance annotations based on effect direction and p-values
         # Warning: add FDR correction to moabb.analysis.meta_analysis.compute_dataset_statistics
         if v > 0:
-            p = df_fw.loc[df_fw.dataset == d, "p_bonferroni"].item()
+            p = df_fw.loc[df_fw.dataset == d, "p_fdr_bh"].item()
         else:
-            p = df_bk.loc[df_bk.dataset == d, "p_bonferroni"].item()
+            p = df_bk.loc[df_bk.dataset == d, "p_fdr_bh"].item()
         if p < 0.05:
             sig_ind.append(ind)
             pvals.append(p)
-
-        # Update min/max values for x-axis limits
-        # _min = _min if (_min < (v - ci[-1])) else (v - ci[-1])
-        # _max = _max if (_max > (v + ci[-1])) else (v + ci[-1])
-
-        # Plot horizontal line for CI
-        # ax.plot(
-        #     np.array([v - ci[-1], v + ci[-1]]), np.ones((2,)) * (ind + 1), c="tab:grey"
-        # )
-
-    # Fix x-axis range
-    # _range = max(abs(_min), abs(_max))
-    # print(_range)
-    # ax.set_xlim((0 - _range, 0 + _range))
-    ax.set_xlim((0 - 2.65, 0 + 2.65))
 
     # Compute the combined (meta) effect across datasets using random-effects model
     # replace old computation from computation to moabb.analysis.meta_analysis.combine_effects
@@ -260,6 +240,13 @@ def meta_analysis_plot(
     ci_upp = summary_df_dsets["ci_upp"]
     for i, (low, upp) in enumerate(zip(ci_low, ci_upp)):
         ax.plot([low, upp], [i + 1, i + 1], c="tab:grey", zorder=1)
+
+    # Fix x-axis range
+    # _min = min(ci_low)
+    # _max = max(ci_upp)
+    # _range = max(abs(_min), abs(_max))
+    # ax.set_xlim((0 - _range, 0 + _range))
+    ax.set_xlim((0 - 2.65, 0 + 2.65))
 
     # Plot meta-effect (top) and individual effects (below)
     ax.scatter(
