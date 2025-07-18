@@ -12,9 +12,11 @@ import numpy as np
 import pandas as pd
 import pickle
 from scipy import stats
+from statsmodels.stats.multitest import multipletests
+
 import time
 
-from config import load_config, ConfigPath, DATASETS, LATERALIZATION_METRIC
+from config import load_config, ConfigPath, DATASETS, LATERALIZATION_METRIC, P_VAL
 from moabb_settings import create_info_file
 import networktools.net_topo as net_topo
 
@@ -120,6 +122,13 @@ for metric, method in methods.items():
 
 # Concatenate all DataFrames into one for all metrics and datasets
 df_t_test = pd.concat(df_list, ignore_index=True)
+
+# FDR Correction (Global, across all p-values)
+all_pvals = df_t_test["p_val"].values
+rejected, pvals_corrected, _, _ = multipletests(all_pvals, alpha=P_VAL, method="fdr_bh")
+
+df_t_test["p_fdr_bh"] = pvals_corrected
+df_t_test["significant_fdr_bh"] = rejected
 
 # Save the results to a CSV file
 df_t_test.to_csv(ConfigPath.RES_DIR / "stats/t_test_perm5000.csv", index=False)
