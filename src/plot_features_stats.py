@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.stats import combine_pvalues
+import scipy.stats as stats
+from scipy.stats import zscore
 from statsmodels.stats.multitest import multipletests
 
 from plottools.plot_positions import channel_pos
@@ -24,45 +26,58 @@ from config import (
 )
 
 
-def channel_size(df, channel_names, effect_size=False):
-    """Calculate the channel size for meta-analysis statistics
+def channel_size(df, channel_names, weighted_effect=False, significant=True):
+    """
+    Compute the channel-wise statistic (average t-value or effect size) for meta-analysis.
 
     Parameters
     ----------
     df : DataFrame
-        containing the metrics for each channel.
+        Data containing t-values (or metrics) for each channel across datasets or subjects.
+        Assumes columns: 'node', 't_val', 'significant_fdr_bh', and optionally 'nsub'.
 
-    effect_size : bool, optional
-        If True, computes the effect size using weights defined based on number of subjects, by default False.
+    channel_names : array-like of shape (n_channels)
+        List of channel (node) names to process.
 
-    channel_names : {array-like} of shape (n_channels)
-        Vector with nodes to be selected.
+    weighted_effect : bool, optional
+        If True, compute weighted effect size (t-value divided by sqrt of subject count).
+        Default is False (raw t-values used).
+
+    significant : bool, optional
+        If True, include only channels marked as statistically significant (based on FDR correction).
+        Default is True.
 
     Returns
     -------
-    ch_size : list
-        Mean sizes for each channel.
+    ch_size : np.ndarray
+        Array of mean values (t-values or effect sizes) for each channel.
+        Non-significant or missing channels are assigned 0.
     """
-    if effect_size:
-        # Multiply each t-val by effect size
-        dt_nsubs = df["nsub"].unique()
-        weights = np.sqrt(list(dt_nsubs))
-        weights = weights / weights.sum()
 
-        for dataset, w in zip(df.dataset.unique(), weights):
-            df.loc[df.dataset == dataset, "t_val"] = (
-                w * df.loc[df.dataset == dataset, "t_val"]
-            )
-        ch_t_val = df.groupby("node")["t_val"].apply(list).to_dict()
-        ch_size_ = [
-            np.mean(ch_t_val[ch]) for ch in channel_names
-        ]  # this is the sum including size effect
+    if significant:
+        ch_size_ = []
+
+        for ch in channel_names:
+            # Filter for the current channel and significant entries
+            df_ch = df[(df["node"] == ch) & (df["significant_fdr_bh"])]
+            t_vals = df_ch["t_val"].values
+
+            if len(t_vals) > 0:
+                if weighted_effect:
+                    n_subs = df_ch["nsub"].astype(float).values
+                    W = np.sqrt(n_subs)
+                    t_vals = t_vals / W
+                mean_t_val = np.mean(t_vals)
+            else:
+                mean_t_val = 0.0
+
+            ch_size_.append(mean_t_val)
     else:
         # Compute mean across t-values for each channel
         ch_t_val = df.groupby("node")["t_val"].apply(list).to_dict()
         ch_size_ = [np.mean(ch_t_val[ch]) for ch in channel_names]
 
-    return np.array(ch_size_)
+    return np.nan_to_num(np.array(ch_size_), nan=0.0)
 
 
 def combine_channel_pvalues(df, channels):
@@ -151,43 +166,36 @@ for metric, method in methods.items():
     )
 
     print("*" * 100)
+    weighting = False
     # for each dataset or all datasets together
     for dts in np.append(df_metric.dataset.unique(), "all"):
         print(f"{metric}: {dts}")
         if dts == "all":
             df_metric_dt = df_metric.loc[:]
             ch_names_dts = ch_keys
+            weighting = True
+            n_selected = 20
         else:
             df_metric_dt = df_metric.loc[df_metric["dataset"] == dts]
             ch_names_dts = params["ch_names"][dts]
+            n_selected = 10
 
         ch_names = df_metric_dt.node.unique()
         xlim_max = max(positions[:, 0])
         ch_names = ch_names[~np.isin(ch_names, EXCLUDE_CHANNELS)]
 
         # Compute t-values (mean channel size)
-        ch_size = channel_size(df_metric_dt, ch_names, effect_size=False)
-
-        # Combine p-values per channels
-        combined_pvals = combine_channel_pvalues(df_metric_dt, ch_names)
-
-        # Apply Bonferroni correction
-        rejected, pvals_corrected, _, _ = multipletests(
-            combined_pvals, alpha=P_VAL, method="bonferroni"
+        ch_size = channel_size(
+            df_metric_dt, ch_names, weighted_effect=weighting, significant=True
         )
 
-        # Determine indices of significant or top 10 channels
-        if np.any(rejected):
-            ch_name_idx = np.where(rejected)[0]
-            msg = "Significant channels (Bonferroni corrected):"
-        else:
-            ch_name_idx = np.argsort(np.abs(ch_size))[-10:]
-            msg = "No significant channels after Bonferroni correction. Showing top 10 t-values:"
+        thresh = abs(ch_size[np.argsort(abs(ch_size))[-n_selected:]][0])
+        ch_name_idx = np.where((np.abs(ch_size) >= thresh) & (ch_size != 0))[0]
+        ch_name_idx_sort = ch_name_idx[np.argsort(ch_size[ch_name_idx])]
 
         # Sort selected channels by absolute t-value
-        sorted_idx = ch_name_idx[np.argsort(np.abs(ch_size[ch_name_idx]))]
-        sig_channels_sort = ch_names[sorted_idx]
-        print(f"{msg} {sig_channels_sort}")
+        sig_channels_sort = ch_names[ch_name_idx_sort]
+        print(f"Showing top 10 t-values: {sig_channels_sort}")
 
         # Plot t-values
         fig, ax = feature_plot_2d(ch_size, ch_names, palette=palette)
