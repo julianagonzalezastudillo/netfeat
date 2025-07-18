@@ -11,9 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.stats import combine_pvalues
-import scipy.stats as stats
-from scipy.stats import zscore
-from statsmodels.stats.multitest import multipletests
 
 from plottools.plot_positions import channel_pos
 from plottools.plot_tools import save_mat_file
